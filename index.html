@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSE Econ Hub</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root { --pr: #2563eb; --bg: #f8fafc; --card: #ffffff; --text: #1e293b; --bd: #e2e8f0; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 260px; background: #0f172a; color: white; padding: 30px 20px; display: flex; flex-direction: column; }
+        .logo { font-weight: 800; font-size: 22px; margin-bottom: 40px; display: flex; align-items: center; gap: 10px; }
+        .nav-item { padding: 12px; border-radius: 10px; cursor: pointer; margin-bottom: 10px; transition: 0.3s; opacity: 0.7; }
+        .nav-item.active { background: var(--pr); opacity: 1; }
+
+        /* MAIN AREA */
+        .main { flex: 1; padding: 40px; overflow-y: auto; }
+        .card { background: var(--card); border-radius: 20px; padding: 40px; border: 1px solid var(--bd); box-shadow: 0 10px 15px rgba(0,0,0,0.05); max-width: 800px; margin: 0 auto; }
+        
+        /* MCQ BUTTONS */
+        .opt { width: 100%; padding: 18px; margin: 12px 0; text-align: left; border: 2px solid var(--bd); border-radius: 14px; background: white; cursor: pointer; font-size: 16px; font-weight: 600; transition: 0.2s; color: var(--text); }
+        .opt:hover { border-color: var(--pr); background: #f0f7ff; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; color: #166534 !important; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b !important; }
+        
+        .next-btn { background: var(--pr); color: white; border: none; padding: 14px 30px; border-radius: 12px; font-weight: 800; cursor: pointer; float: right; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <div class="logo"><i class="fas fa-graduation-cap"></i> ECON HUB</div>
+        <div class="nav-item active"><i class="fas fa-edit"></i> MCQ Practice</div>
+        <div class="nav-item"><i class="fas fa-chart-line"></i> Analytics</div>
+    </div>
+    <main class="main">
+        <div class="card">
+            <div id="topic" style="color:var(--pr); font-weight:800; font-size:12px; text-transform:uppercase; margin-bottom:10px;">Topic Loading...</div>
+            <h2 id="question" style="font-size:1.6rem; margin-bottom:30px; line-height:1.4;"></h2>
+            <div id="options"></div>
+            <button class="next-btn" onclick="nextQuestion()">Next Question <i class="fas fa-arrow-right"></i></button>
+        </div>
+    </main>
+    <script src="app.js"></script>
+</body>
+</html>
