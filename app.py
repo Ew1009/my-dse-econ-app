@@ -2,125 +2,110 @@ import streamlit as st
 import json
 import random
 import requests
-import base64
 
-# 1. PAGE ENGINE & SECRETS
-st.set_page_config(page_title="DSE Econ Hub v2.1", layout="wide", initial_sidebar_state="expanded")
+# 1. SETUP
+st.set_page_config(page_title="DSE Econ Hub v2.1", layout="wide")
 
-# 2. INJECTING YOUR ENTIRE V0.1 CSS (The "Anti-Garbage" Layer)
+# 2. THE "SAFETY SHIELD" CSS (Prevents white-on-white merging)
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
     
-    :root {
-      --primary: #2563eb; --primary-dark: #1d4ed8; --accent: #06b6d4;
-      --bg-primary: #f8fafc; --bg-secondary: #ffffff; --text-main: #1e293b;
+    /* FORCE BACKGROUND COLOR */
+    .stApp {
+        background-color: #f8fafc !important;
     }
 
-    /* KILL STREAMLIT UI */
-    .stApp { background-color: var(--bg-primary); }
-    header {visibility: hidden;}
-    footer {visibility: hidden;}
-    
-    /* THE SIDEBAR (Your v0.1 Style) */
+    /* FORCE MAIN TEXT VISIBILITY */
+    h1, h2, h3, p, span, div, label {
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        color: #0f172a !important; /* Dark Slate - Always readable on white */
+    }
+
+    /* SIDEBAR PROTECTION: Dark background, White text */
     [data-testid="stSidebar"] {
         background-color: #0f172a !important;
-        border-right: 1px solid #1e293b;
     }
-    [data-testid="stSidebar"] * { color: #f1f5f9 !important; font-family: 'Plus Jakarta Sans'; }
-
-    /* MODERN CARDS (Glassmorphism) */
-    div[data-testid="stVerticalBlock"] > div:has(div.stMarkdown) {
-        background: white;
-        padding: 30px;
-        border-radius: 20px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-        transition: all 0.3s ease;
+    [data-testid="stSidebar"] * {
+        color: #ffffff !important; /* Force all sidebar text to be pure white */
+    }
+    
+    /* INPUT BOXES: Ensure text inside isn't white */
+    input, textarea {
+        color: #0f172a !important;
+        background-color: #ffffff !important;
     }
 
-    /* MCQ BUTTONS STYLE */
-    .stButton > button {
-        width: 100%;
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        color: white !important;
-        border: none;
-        border-radius: 12px;
-        padding: 15px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
+    /* CARDS (From your v0.1) */
+    .econ-card {
+        background: white !important;
+        padding: 25px;
+        border-radius: 15px;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
     }
 
-    /* TYPOGRAPHY */
-    h1, h2, h3 { font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 800 !important; color: #0f172a; }
+    /* SUCCESS/ERROR BOXES: Force high contrast */
+    .stSuccess { background-color: #dcfce7 !important; color: #166534 !important; }
+    .stError { background-color: #fee2e2 !important; color: #991b1b !important; }
     </style>
     """, unsafe_allow_html=True)
 
-# 3. SECURE AI LOGIC (Llama-3-70B)
-def get_ai_response(prompt):
+# 3. BACKEND (AI & Data)
+def ask_ai(prompt):
     API_URL = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-70B-Instruct"
     headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"}
-    payload = {
-        "inputs": f"<|begin_of_text|><|start_header_id|>system<|end_header_id|>You are a DSE Economics Tutor. Use exam keywords.<|eot_id|><|start_header_id|>user<|end_header_id|>{prompt}<|eot_id|><|start_header_id|>assistant<|end_header_id|>",
-        "parameters": {"max_new_tokens": 1000}
-    }
+    payload = {"inputs": f"DSE Econ Tutor: {prompt}", "parameters": {"max_new_tokens": 500}}
     try:
         response = requests.post(API_URL, headers=headers, json=payload)
         return response.json()[0]['generated_text']
     except:
-        return "⚠️ Model is loading. Please wait 30 seconds."
+        return "AI is sleeping. Refresh in 30s."
 
-# 4. QUESTION DATA ENGINE
 @st.cache_data
-def load_bank():
+def load_qs():
     with open('questions.json', 'r', encoding='utf-8') as f:
         return json.load(f)
 
-# 5. UI STATE MANAGEMENT
-if 'q' not in st.session_state:
-    st.session_state.q = random.choice(load_bank())
-if 'score' not in st.session_state:
-    st.session_state.score = 0
-
-# 6. SIDEBAR (The Original Sidebar Look)
+# 4. SIDEBAR
 with st.sidebar:
-    st.markdown("<h1 style='color:white;'>🎓 DSE ECON</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color:white !important;'>🎓 DSE ECON</h2>", unsafe_allow_html=True)
     st.write("---")
-    nav = st.radio("NAVIGATE", ["📊 Dashboard", "🤖 AI Tutor", "📝 Practice", "📚 Formulas"])
-    st.write("---")
-    st.write(f"Accuracy: {st.session_state.score}%")
+    page = st.radio("SELECT MODULE", ["📊 Dashboard", "🤖 AI Tutor", "📝 MCQs"])
 
-# 7. MAIN MODULES
-if nav == "📊 Dashboard":
-    st.title("Student Performance Hub")
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Progress", "High", "+12%")
-    c2.metric("MCQs Done", len(load_bank()))
-    c3.metric("AI Status", "Online")
-    
-    st.markdown("### 📈 Recent Activity")
-    st.write("You are currently focusing on **Market & Efficiency**. Keep it up!")
-
-elif nav == "🤖 AI Tutor":
-    st.title("Llama-3 Theory Assistant")
-    query = st.text_area("What Econ concept are you struggling with?", placeholder="e.g. Wealth Effect vs Substitution Effect")
-    if st.button("EXPLAIN CONCEPT"):
-        with st.spinner("Analyzing DSE Curriculum..."):
-            st.markdown(get_ai_response(query))
-
-elif nav == "📝 Practice":
-    q = st.session_state.q
-    st.title("Exam Practice")
-    st.markdown(f"**Topic:** `{q['topic']}`")
-    
-    # Use st.info to mimic your original Blue Question Box
-    st.info(q['question'])
-    
-    choice = st.radio("Select the correct option:", q['options'], key="mcq_select")
-    
+# 5. PAGES
+if page == "📊 Dashboard":
+    st.markdown("<div class='econ-card'><h1>Welcome back</h1><p>Your progress is synced.</p></div>", unsafe_allow_html=True)
     col1, col2 = st.columns(2)
-    with col1:
-        if st.button("SUBMIT"):
-            if choice.startswith(q['answer']):
-                st.success
+    col1.metric("Questions", "300+")
+    col2.metric("Status", "Online")
+
+elif page == "🤖 AI Tutor":
+    st.title("Llama-3 Tutor")
+    u_query = st.text_area("Ask any Econ concept:")
+    if st.button("Explain"):
+        with st.spinner("Thinking..."):
+            ans = ask_ai(u_query)
+            st.markdown(f"<div class='econ-card'>{ans}</div>", unsafe_allow_html=True)
+
+elif page == "📝 MCQs":
+    qs = load_qs()
+    if 'current_q' not in st.session_state:
+        st.session_state.current_q = random.choice(qs)
+    
+    q = st.session_state.current_q
+    
+    st.markdown(f"<div class='econ-card'><h3>{q['topic']}</h3><p>{q['question']}</p></div>", unsafe_allow_html=True)
+    
+    user_choice = st.radio("Answer:", q['options'])
+    
+    if st.button("Submit"):
+        if user_choice.startswith(q['answer']):
+            st.success("Correct!")
+        else:
+            st.error(f"Wrong. Correct: {q['answer']}")
+    
+    if st.button("Next Question"):
+        st.session_state.current_q = random.choice(qs)
+        st.rerun()
