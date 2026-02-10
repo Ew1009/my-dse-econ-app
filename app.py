@@ -83,5 +83,10 @@ elif page == "MCQ Practice":
         
         user_choice = st.radio("Choose the correct option:", q['options'])
         
-        if st.button("Submit Answer"):
-            # Check if the chosen letter (
+# --- Corrected Section ---
+if st.button("Submit Answer"):
+    # This part MUST be indented with 4 spaces
+    if user_choice.startswith(q['answer']):
+        st.success(f"Correct! {q.get('explanation', '')}")
+    else:
+        st.error(f"Incorrect. The answer is {q['answer']}. {q.get('explanation', '')}")
