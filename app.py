@@ -9,45 +9,27 @@ st.set_page_config(page_title="DSE Econ Hub", layout="wide")
 # This is the "Magic" that fixes the UI
 st.markdown("""
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+    /* Force high contrast for the sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #1e293b !important; /* Dark Blue Sidebar */
+    }
+    section[data-testid="stSidebar"] * {
+        color: white !important; /* Force all sidebar text to be white */
+    }
     
-    * { font-family: 'Plus Jakarta Sans', sans-serif; }
-    
-    /* Background and Card Styling */
-    .stApp { background-color: #f8fafc; }
-    
-    div[data-testid="stVerticalBlock"] > div:has(div.stMarkdown) {
-        background: white;
-        padding: 2rem;
-        border-radius: 15px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        margin-bottom: 1rem;
+    /* Make the question box pop */
+    .stInfo {
+        background-color: #eff6ff !important;
+        border: 1px solid #bfdbfe !important;
+        color: #1e3a8a !important;
+        font-weight: 600;
     }
 
-    /* Sidebar Styling */
-    section[data-testid="stSidebar"] {
-        background-color: #ffffff !important;
-        border-right: 1px solid #e2e8f0;
+    /* Fix the Dashboard white-out */
+    .stMarkdown h1, h2, h3 {
+        color: #0f172a !important;
     }
-    
-    /* Buttons */
-    .stButton>button {
-        width: 100%;
-        border-radius: 8px;
-        background-color: #2563eb;
-        color: white;
-        border: none;
-        font-weight: 600;
-        padding: 0.5rem;
-    }
-    
-    .stButton>button:hover {
-        background-color: #1d4ed8;
-        border: none;
-        color: white;
-    }
-    </style>
+</style>
     """, unsafe_allow_html=True)
 
 # 2. AI ENGINE (Hugging Face)
@@ -138,3 +120,4 @@ elif page == "📝 MCQ Practice":
             if st.button("Next Question"):
                 st.session_state.current_q = random.choice(all_questions)
                 st.rerun()
+
