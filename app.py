@@ -3,8 +3,52 @@ import json
 import random
 import requests
 
-# 1. PAGE SETUP
+# 1. PAGE SETUP & BEAUTIFICATION
 st.set_page_config(page_title="DSE Econ Hub", layout="wide")
+
+# This is the "Magic" that fixes the UI
+st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
+    
+    * { font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    /* Background and Card Styling */
+    .stApp { background-color: #f8fafc; }
+    
+    div[data-testid="stVerticalBlock"] > div:has(div.stMarkdown) {
+        background: white;
+        padding: 2rem;
+        border-radius: 15px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        margin-bottom: 1rem;
+    }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #ffffff !important;
+        border-right: 1px solid #e2e8f0;
+    }
+    
+    /* Buttons */
+    .stButton>button {
+        width: 100%;
+        border-radius: 8px;
+        background-color: #2563eb;
+        color: white;
+        border: none;
+        font-weight: 600;
+        padding: 0.5rem;
+    }
+    
+    .stButton>button:hover {
+        background-color: #1d4ed8;
+        border: none;
+        color: white;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
 # 2. AI ENGINE (Hugging Face)
 def ask_ai(user_query):
@@ -31,35 +75,45 @@ def load_questions():
     except:
         return []
 
-# 4. INITIALIZE SESSION STATE (The "Glue" that fixes your error)
+# 4. INITIALIZE SESSION STATE
 if 'current_q' not in st.session_state:
     questions = load_questions()
-    if questions:
-        st.session_state.current_q = random.choice(questions)
-    else:
-        st.session_state.current_q = None
+    st.session_state.current_q = random.choice(questions) if questions else None
 
 # 5. SIDEBAR
 with st.sidebar:
-    st.title("🎓 DSE Econ v2.1")
-    page = st.radio("Navigation", ["Dashboard", "AI Tutor", "MCQ Practice"])
+    st.title("🎓 DSE Econ Hub")
+    st.caption("Version 2.1.2 • Open Source")
+    st.write("---")
+    page = st.radio("MAIN MENU", ["📊 Dashboard", "🤖 AI Tutor", "📝 MCQ Practice"])
 
 # 6. DASHBOARD
-if page == "Dashboard":
-    st.title("Welcome to your Economics Hub")
-    st.write("This app is running live on Streamlit Cloud.")
+if page == "📊 Dashboard":
+    st.title("Welcome Back, Scholar")
+    st.markdown("### Your Economic Command Center")
+    
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Course Progress", "12%")
+    c2.metric("Accuracy", "88%")
+    c3.metric("Study Streak", "4 Days")
+    
+    st.write("---")
+    st.markdown("#### Quick Tips for DSE")
+    st.write("1. Always define your terms first.")
+    st.write("2. Remember: Marginal Benefit = Marginal Cost for efficiency.")
 
 # 7. AI TUTOR
-elif page == "AI Tutor":
-    st.title("🤖 AI Economics Tutor")
-    u_input = st.text_input("Ask a question:")
-    if st.button("Explain"):
-        with st.spinner("Thinking..."):
-            st.write(ask_ai(u_input))
+elif page == "🤖 AI Tutor":
+    st.title("AI Tutor")
+    st.write("Ask me to clarify any economic theory.")
+    u_input = st.text_input("What would you like to learn?", placeholder="e.g. Why is the LRAS curve vertical?")
+    if st.button("Generate Explanation"):
+        with st.spinner("Analyzing theory..."):
+            st.markdown(ask_ai(u_input))
 
-# 8. MCQ PRACTICE (Fixed logic)
-elif page == "MCQ Practice":
-    st.title("📝 Practice Mode")
+# 8. MCQ PRACTICE
+elif page == "📝 MCQ Practice":
+    st.title("Practice Exam")
     all_questions = load_questions()
     
     if not st.session_state.current_q:
@@ -67,23 +121,20 @@ elif page == "MCQ Practice":
     else:
         q = st.session_state.current_q
         st.subheader(f"Topic: {q.get('topic', 'General')}")
-        st.write(q['question'])
+        st.info(q['question'])
         
-        # We save the user's choice into session_state so it doesn't disappear
-        user_choice = st.radio("Select your answer:", q['options'], key="user_choice_radio")
+        user_choice = st.radio("Select the best answer:", q['options'], key="choice")
         
-        col1, col2 = st.columns(2)
-        
-        with col1:
+        c1, c2 = st.columns(2)
+        with c1:
             if st.button("Submit Answer"):
                 if user_choice.startswith(q['answer']):
-                    st.success(f"Correct! The answer is {q['answer']}.")
-                    st.write(q.get('explanation', ''))
+                    st.success(f"✅ Correct! The answer is {q['answer']}.")
                 else:
-                    st.error(f"Incorrect. The correct answer is {q['answer']}.")
-                    st.write(q.get('explanation', ''))
+                    st.error(f"❌ Incorrect. The correct answer is {q['answer']}.")
+                st.write(f"**Explanation:** {q.get('explanation', 'Refer to DSE curriculum.')}")
         
-        with col2:
+        with c2:
             if st.button("Next Question"):
                 st.session_state.current_q = random.choice(all_questions)
                 st.rerun()
