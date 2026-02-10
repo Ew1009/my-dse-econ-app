@@ -74,6 +74,7 @@ elif page == "MCQ Practice":
     if not questions:
         st.error("No questions found! Make sure questions.json is in your GitHub.")
     else:
+        # 1. Initialize the current question if it's not there
         if 'current_q' not in st.session_state:
             st.session_state.current_q = random.choice(questions)
 
@@ -81,7 +82,20 @@ elif page == "MCQ Practice":
         st.subheader(f"Topic: {q.get('topic', 'General')}")
         st.write(q['question'])
         
-        user_choice = st.radio("Choose the correct option:", q['options'])
+        # 2. ALWAYS define user_choice here so the computer "sees" it
+        user_choice = st.radio("Choose the correct option:", q['options'], key="mcq_radio")
+        
+        # 3. Now check the button
+        if st.button("Submit Answer"):
+            # The computer now knows exactly what user_choice is
+            if user_choice.startswith(q['answer']):
+                st.success(f"Correct! {q.get('explanation', '')}")
+            else:
+                st.error(f"Incorrect. The answer is {q['answer']}. {q.get('explanation', '')}")
+        
+        if st.button("New Question"):
+            st.session_state.current_q = random.choice(questions)
+            st.rerun()
         
 # --- Corrected Section ---
 if st.button("Submit Answer"):
@@ -90,3 +104,4 @@ if st.button("Submit Answer"):
         st.success(f"Correct! {q.get('explanation', '')}")
     else:
         st.error(f"Incorrect. The answer is {q['answer']}. {q.get('explanation', '')}")
+
