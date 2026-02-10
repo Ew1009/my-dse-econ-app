@@ -3,42 +3,12 @@ import json
 import random
 import requests
 
-# 1. THE ULTIMATE UI FIX (Forces Colors)
-st.set_page_config(page_title="DSE Econ Hub", layout="wide")
+# 1. BASIC CONFIG (No heavy CSS to prevent blank screens)
+st.set_page_config(page_title="DSE Econ Hub", layout="centered")
 
-st.markdown("""
-    <style>
-    /* Force Sidebar to be Dark and Text to be White */
-    [data-testid="stSidebar"] {
-        background-color: #0f172a !important;
-        color: white !important;
-    }
-    [data-testid="stSidebar"] * {
-        color: white !important;
-    }
-    /* Make the Main area clean */
-    .stApp { background-color: #f1f5f9; }
-    
-    /* Style Question Boxes */
-    .stInfo {
-        background-color: #ffffff !important;
-        color: #1e293b !important;
-        border-left: 5px solid #3b82f6 !important;
-        border-radius: 8px;
-        padding: 20px;
-    }
-    /* Fix Button Colors */
-    .stButton>button {
-        background-color: #3b82f6;
-        color: white;
-        border-radius: 5px;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
-# 2. AI ENGINE (Hugging Face)
+# 2. AI ENGINE (Hugging Face - Llama 3)
 def ask_ai(user_query):
-    # If the 8B model is "warming up", we use the 70B one which is usually more stable
+    # Using the 70B model as it stays 'awake' more often
     API_URL = "https://api-inference.huggingface.co/models/meta-llama/Meta-Llama-3-70B-Instruct"
     headers = {"Authorization": f"Bearer {st.secrets['HF_TOKEN']}"}
     payload = {
@@ -50,9 +20,9 @@ def ask_ai(user_query):
         res_json = response.json()
         if isinstance(res_json, list):
             return res_json[0]['generated_text']
-        return "Model is loading. Give it 30 seconds and click 'Generate' again!"
+        return "AI is loading. Please wait 30 seconds and try again."
     except:
-        return "Check your HF_TOKEN in Streamlit Secrets!"
+        return "Error: Please check if HF_TOKEN is set in Streamlit Secrets."
 
 # 3. LOAD QUESTIONS
 def load_questions():
@@ -60,46 +30,47 @@ def load_questions():
         with open('questions.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except:
-        return [{"topic": "Error", "question": "JSON not found!", "options": ["A","B","C","D"], "answer": "A"}]
+        return [{"topic": "General", "question": "JSON file not found. Please upload questions.json", "options": ["A","B","C","D"], "answer": "A"}]
 
-# 4. DATA INITIALIZATION
+# 4. INITIALIZE SESSION
 if 'current_q' not in st.session_state:
     qs = load_questions()
     st.session_state.current_q = random.choice(qs)
 
-# 5. SIDEBAR MENU
+# 5. SIMPLE SIDEBAR
 with st.sidebar:
     st.title("🎓 DSE Econ Hub")
-    st.write("---")
-    page = st.radio("SELECT MODULE", ["📊 Dashboard", "🤖 AI Tutor", "📝 MCQ Practice"])
+    page = st.radio("Menu", ["📊 Dashboard", "🤖 AI Tutor", "📝 MCQ Practice"])
 
 # 6. DASHBOARD
 if page == "📊 Dashboard":
-    st.title("Study Dashboard")
-    st.markdown("### Welcome back!")
-    st.write("Your app is now configured with Hugging Face Llama-3.")
+    st.title("Economics Dashboard")
+    st.write("Welcome! Use the sidebar to navigate between the AI Tutor and MCQ Practice.")
 
 # 7. AI TUTOR
 elif page == "🤖 AI Tutor":
     st.title("AI Tutor")
-    u_input = st.text_input("Ask a question:", placeholder="e.g. Why is LRAS vertical?")
-    if st.button("Generate Explanation"):
-        with st.spinner("Talking to Llama-3..."):
-            st.write(ask_ai(u_input))
+    u_input = st.text_input("Ask a question (e.g., Why is the demand curve downward sloping?)")
+    if st.button("Ask AI"):
+        with st.spinner("Tutor is thinking..."):
+            answer = ask_ai(u_input)
+            st.info(answer)
 
 # 8. MCQ PRACTICE
 elif page == "📝 MCQ Practice":
     st.title("Practice Mode")
     q = st.session_state.current_q
-    st.info(f"**Topic: {q['topic']}**\n\n{q['question']}")
     
-    choice = st.radio("Choose one:", q['options'], key="mcq_radio")
+    st.subheader(f"Topic: {q['topic']}")
+    st.markdown(f"**Question:** {q['question']}")
     
-    if st.button("Submit Answer"):
+    choice = st.radio("Select your answer:", q['options'], key="mcq_select")
+    
+    if st.button("Check Answer"):
         if choice.startswith(q['answer']):
             st.success(f"Correct! The answer is {q['answer']}.")
         else:
-            st.error(f"Incorrect. The answer is {q['answer']}.")
+            st.error(f"Incorrect. The correct answer is {q['answer']}.")
             
     if st.button("Next Question"):
         st.session_state.current_q = random.choice(load_questions())
