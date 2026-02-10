@@ -1,0 +1,28 @@
+[
+  {
+    "id": 102,
+    "topic": "Factors of Production",
+    "question": "The _________ mobility of labour will decrease if _________.",
+    "options": [
+      "A. geographical … the government introduces “city-bike rental scheme”",
+      "B. geographical … several big companies set up child care centres",
+      "C. occupational … the travelling subsidy provided by the government is reduced",
+      "D. occupational … licences are required by the government for more professions"
+    ],
+    "answer": "D",
+    "explanation": "Licensing requirements create barriers to entry, reducing occupational mobility."
+  },
+  {
+    "id": 152,
+    "topic": "Determination of Market Price",
+    "question": "Suppose the government increases the taxi fare by $2 per trip. Which of the following is most likely to happen?",
+    "options": [
+      "A. The total revenue of taxi drivers will definitely increase.",
+      "B. The ratio of short-distance taxi trips to long-distance trips will decrease.",
+      "C. The supply of taxi services will increase.",
+      "D. The equilibrium quantity of taxi trips will increase."
+    ],
+    "answer": "B",
+    "explanation": "A fixed increase in price reduces the relative price of expensive (long-distance) goods, increasing their relative consumption (Alchian-Allen Effect)."
+  }
+]
