@@ -167,7 +167,7 @@ window.AIHelper = {
   getProviderInfo: function() {
     return {
       provider: 'OpenRouter',
-      model: 'openai/gpt-oss-20b:free',
+      model: 'google/gemma-3-27b-it:free',
       backend: '/api/chat'
     };
   }
