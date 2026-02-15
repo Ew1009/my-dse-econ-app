@@ -73,7 +73,7 @@ js/
 | Role | Model ID | Notes |
 |------|----------|-------|
 | Primary | `openai/gpt-oss-120b:free` | High quality, may be slow or rate-limited |
-| Fallback | `google/gemini-2.0-flash-lite:free` | Fast, lightweight, free tier |
+| Fallback | `openai/gpt-oss-20b:free` | Fast, lightweight, free tier |
 
 ### Backend Whitelist
 The backend only allows models listed in `ALLOWED_MODELS`. Any unknown model ID is silently replaced with the default.
