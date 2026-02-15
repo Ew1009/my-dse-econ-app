@@ -64,7 +64,7 @@ function submitLongQ(c){
 
   /* Call AI — prompt is the first argument (string), options is the second argument (object) */
   window.AIHelper.callAI(prompt, {
-    systemPrompt: systemPrompt: "You are an inspiring HKDSE Economics mentor. Avoid 'Wall of Text' syndrome—think like a high-impact presentation designer!\n\n" +
+    systemPrompt: "You are an inspiring HKDSE Economics mentor. Avoid 'Wall of Text' syndrome—think like a high-impact presentation designer!\n\n" +
     "1. **Be Enthusiastic**: Start with energy! (e.g., 'Spot on!', 'Let\'s master this!').\n" +
     "2. **Bold Hierarchy**: Use **Bold Headers** for sections and **Bold Keywords** for DSE terms.\n" +
     "3. **Visual Contrast**: Use `> Blockquotes` for key definitions.\n" +
