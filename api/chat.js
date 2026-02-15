@@ -12,7 +12,7 @@
 
 const ALLOWED_MODELS = [
   'openai/gpt-oss-120b:free',
-  'liquid/lfm-2.5-1.2b-instruct:free'
+  'openai/gpt-oss-20b:free'
 ];
 
 const DEFAULT_MODEL = 'openai/gpt-oss-120b:free';
