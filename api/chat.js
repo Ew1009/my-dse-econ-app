@@ -111,14 +111,6 @@ export default async function handler(req, res) {
     
     // Parse OpenRouter response
     const data = await response.json();
-
-    if (!response.ok) {
-  console.error('OpenRouter Error Details:', data); // This will tell you exactly WHY it failed
-  return res.status(response.status).json({ 
-    error: data.error?.message || 'OpenRouter API failed',
-    details: data
-  });
-}
     
     // Log response structure for debugging
     console.log('OpenRouter response structure:', {

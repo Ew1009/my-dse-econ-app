@@ -64,15 +64,15 @@ function submitLongQ(c){
 
   /* Call AI — prompt is the first argument (string), options is the second argument (object) */
   window.AIHelper.callAI(prompt, {
-    systemPrompt: "You are an expert HKDSE Economics teacher. Provide professional, structured feedback with high visibility:\n\n" +
-    "1. **Vertical Spacing**: Use blank lines between the student's score, the critique, and the model answer.\n" +
-    "2. **Clear Marks**: State awarded marks clearly at the start of each section (e.g., **Score: 3/4**).\n" +
-    "3. **Simple Indicators**: Use a (+) for things done well and a (-) for missing points.\n" +
-    "4. **Model Answer Box**: Use a single `> Blockquote` for the sample answer to make it stand out from the critique.\n" +
-    "5. **No Clutter**: Avoid extra symbols or dividers. Use whitespace to create separation.",
-  maxTokens: 3000,
-  temperature: 0.4
-}).then(function(feedback){
+    systemPrompt: 'You are an expert HKDSE Economics teacher. Provide professional, structured feedback with high visibility:\n\n' +
+    '1. **Vertical Spacing**: Use blank lines between the student\'s score, the critique, and the model answer.\n' +
+    '2. **Clear Marks**: State awarded marks clearly at the start of each section (e.g., **Score: 3/4**).\n' +
+    '3. **Simple Indicators**: Use a (+) for things done well and a (-) for missing points.\n' +
+    '4. **Model Answer Box**: Use a single `> Blockquote` for the sample answer to make it stand out from the critique.\n' +
+    '5. **No Clutter**: Avoid extra symbols or dividers. Use whitespace to create separation.',
+    maxTokens: 3000,
+    temperature: 0.5
+  }).then(function(feedback){
     document.getElementById('loadOv').style.display='none';
     ses.feedback=feedback;
     /* Record history */
@@ -407,12 +407,12 @@ function wireAigTutor(c){
 
     /* Call AI — prompt is the first argument (string), options is the second argument (object) */
     window.AIHelper.callAI(prompt, {
-      systemPrompt: "You are an inspiring HKDSE Economics mentor. Your tone is professional and authoritative, but stays high-energy! Avoid 'Wall of Text' syndrome:\n\n" +
-    "1. **Clean Spacing**: Use double line breaks between EVERY paragraph and section for maximum readability.\n\n" +
-    "2. **The 'Superpower' Hook**: Briefly explain why a concept (like Opportunity Cost) is a 'superpower' for exams and life decisions.\n\n" +
-    "3. **Inspirational Tone**: Use encouraging phrases (e.g., 'Spot on!', 'Let's master this!') while maintaining strict HKEAA academic standards.\n\n" +
-    "4. **Visual Scannability**: Use **Bold Headers** for titles and simple dashes (-) for bullet points.\n\n" +
-    "5. **Growth Mindset**: End with a quick 1-sentence 'Econ Brain Teaser' to keep them thinking.",
+      systemPrompt: 'You are an inspiring HKDSE Economics mentor. Your tone is professional and authoritative, but stays high-energy! Avoid \'Wall of Text\' syndrome:\n\n' +
+    '1. **Clean Spacing**: Use double line breaks between EVERY paragraph and section for maximum readability.\n\n' +
+    '2. **The \'Superpower\' Hook**: Briefly explain why a concept (like Opportunity Cost) is a \'superpower\' for exams and life decisions.\n\n' +
+    '3. **Inspirational Tone**: Use encouraging phrases (e.g., \'Spot on!\', \'Let\'s master this!\') while maintaining strict HKEAA academic standards.\n\n' +
+    '4. **Visual Scannability**: Use **Bold Headers** for titles and simple dashes (-) for bullet points.\n\n' +
+    '5. **Growth Mindset**: End with a quick 1-sentence \'Econ Brain Teaser\' to keep them thinking.',
       maxTokens: 1500,
       temperature: 0.7
     }).then(function(response){
