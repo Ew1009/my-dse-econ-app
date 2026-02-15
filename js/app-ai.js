@@ -162,7 +162,7 @@ function showAiSettings(){
   
   h+='<div style="background:rgba(6,182,212,.1);border-left:3px solid var(--ac);padding:12px;border-radius:6px;font-size:13px;margin-bottom:16px">';
   h+='<div style="font-weight:600;margin-bottom:4px"><i class="fas fa-info-circle"></i> About OpenRouter Integration</div>';
-  h+='<div style="line-height:1.5">This app uses OpenRouter API with the <strong>Qwen: Qwen3 235B A22B Thinking 2507</strong> model (free tier). Your API key is securely stored in Vercel Environment Variables and never exposed to the browser.</div>';
+  h+='<div style="line-height:1.5">This app uses OpenRouter API with the <strong>OpenAI: gpt-oss-20b</strong> model (free tier). Your API key is securely stored in Vercel Environment Variables and never exposed to the browser.</div>';
   h+='<ul style="margin:8px 0 0 20px;line-height:1.8">';
   h+='<li>Model: <strong>openai/gpt-oss-20b:free</strong></li>';
   h+='<li>API calls are routed through <code>/api/chat</code> backend</li>';
