@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSE Econ v2.2 - AI Enhanced</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/question-formats.css">
+</head>
+<body>
+<div class="app">
+  <div class="sb-ov" id="sbOv"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sb-hdr"><div class="logo"><div class="logo-ic"><i class="fas fa-graduation-cap"></i></div><div class="logo-tx">DSE<span>Econ</span><span class="logo-ver">v2.2</span></div></div></div>
+    <nav class="sb-nav" id="sbNav"></nav>
+    <div class="sb-ft"><div class="user-card"><div class="user-av">S</div><div style="flex:1"><div style="font-weight:600;font-size:13px">Student</div><div style="font-size:11px;color:var(--tx3)">DSE Econ Aspirant</div></div><button class="hdr-btn" id="themeBtn" title="Toggle Theme"><i class="fas fa-moon" id="themeIc"></i></button></div></div>
+  </aside>
+  <div class="main">
+    <header class="hdr"><div class="hdr-left"><button class="mob-btn" id="mobBtn"><i class="fas fa-bars"></i></button><h1 class="pg-title" id="pgTitle">Dashboard</h1></div></header>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+<div class="loading-ov" id="loadOv" style="display:none"><div class="loading-card"><div class="spinner"></div><div id="loadTx" style="font-weight:600;margin-bottom:6px">Generating...</div><div id="loadSub" style="font-size:13px;color:var(--tx3)">Please wait</div></div></div>
+<div id="modalCtr"></div>
+<div class="toast-ctr" id="toastCtr"></div>
+
+<!-- ============================================================
+     SCRIPT LOADING ORDER (critical for dependency resolution):
+     
+     1. app.js          - Defines window.S, window.Sections, utils, nav, dashboard
+     2. ai-helper.js    - Defines window.AIHelper.callAI (backend API bridge)
+     3. questions.js     - Defines window.TOPICS, window.MCQ_BANK, window.LQ_BANK
+     4. app-formatters.js - Question formatting utils (depends on: esc, marked, DOMPurify)
+     5. app-mcq.js       - MCQ landing HTML (depends on: TOPICS, MCQ_BANK)
+     6. app-mcq-session.js - MCQ session render + finish (depends on: S, formatQuestionText)
+     7. app-practice.js  - Unified practice section (depends on: S, Sections, renderMcqLanding)
+     8. app-longq.js     - Long Q landing + start (depends on: TOPICS, LQ_BANK, S)
+     9. app-longq-session.js - Long Q session render (depends on: S, GraphTool)
+     10. app-graph.js    - GraphTool for diagram drawing
+     11. app-analytics.js - Analytics section (depends on: S, Sections, TOPICS, Chart)
+     12. app-ai.js       - AI generation + tutor + submitLongQ (depends on: window.AIHelper, S)
+     
+     13. Inline init      - Calls initApp() after everything is loaded
+     ============================================================ -->
+
+<!-- 1. Core: Global state + utilities (MUST be first) -->
+<script src="js/app.js"></script>
+
+<!-- 2. AI Helper: window.AIHelper (MUST be before app-ai.js) -->
+<script src="js/ai-helper.js"></script>
+
+<!-- 3. Question data -->
+<script src="js/questions.js"></script>
+
+<!-- 4. Formatters -->
+<script src="js/app-formatters.js"></script>
+
+<!-- 5-6. MCQ modules -->
+<script src="js/app-mcq.js"></script>
+<script src="js/app-mcq-session.js"></script>
+
+<!-- 7. Practice section (unified MCQ + Long Q landing) -->
+<script src="js/app-practice.js"></script>
+
+<!-- 8-9. Long Q modules -->
+<script src="js/app-longq.js"></script>
+<script src="js/app-longq-session.js"></script>
+
+<!-- 10. Graph tool -->
+<script src="js/app-graph.js"></script>
+
+<!-- 11. Analytics -->
+<script src="js/app-analytics.js"></script>
+
+<!-- 12. AI Functions (submitLongQ, AI Generation, AI Tutor) -->
+<script src="js/app-ai.js"></script>
+
+<!-- 13. Initialize the app AFTER all scripts are loaded -->
+<script>
+  initApp();
+</script>
+</body>
+</html>

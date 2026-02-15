@@ -1,0 +1,122 @@
+/* Question Formatter Styles - from v0.1 */
+
+/* Question stem - context or intro text */
+.question-stem {
+  font-size: 15px;
+  line-height: 1.7;
+  color: var(--tx1);
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--bd);
+}
+
+/* Sub-question text - typically "Which of the following..." */
+.question-sub {
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: var(--tx1);
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--bd);
+}
+
+/* Statement list container */
+.statement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+  padding: 14px;
+  background: var(--bg2);
+  border-radius: 10px;
+  border: 1px solid var(--bd);
+}
+
+/* Individual statement item */
+.statement-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  background: var(--bg1);
+  border-radius: 8px;
+  border: 1px solid var(--bd);
+  transition: all 0.2s;
+}
+
+.statement-item:hover {
+  border-color: var(--pr);
+  background: rgba(37, 99, 235, 0.03);
+}
+
+/* Statement number label */
+.statement-num {
+  min-width: 60px;
+  font-weight: 700;
+  color: var(--pr);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+/* Statement text content */
+.statement-text {
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--tx1);
+}
+
+/* Question text wrapper - general styling */
+.question-text {
+  line-height: 1.7;
+}
+
+.question-text p {
+  margin-bottom: 8px;
+}
+
+.question-text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Dark mode adjustments */
+.dark .statement-list {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dark .statement-item {
+  background: var(--bg1);
+  border-color: var(--bd);
+}
+
+.dark .statement-item:hover {
+  background: rgba(59, 130, 246, 0.08);
+  border-color: var(--pr);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .question-stem,
+  .question-sub {
+    font-size: 14px;
+  }
+  
+  .statement-num {
+    min-width: 50px;
+    font-size: 12px;
+  }
+  
+  .statement-text {
+    font-size: 13px;
+  }
+  
+  .statement-list {
+    padding: 10px;
+    gap: 8px;
+  }
+  
+  .statement-item {
+    padding: 8px;
+  }
+}
