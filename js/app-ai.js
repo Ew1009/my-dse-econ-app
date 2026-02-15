@@ -176,7 +176,7 @@ function showAiSettings(){
   h+='</div>';
   h+='<div style="flex:1;min-width:150px;background:var(--bg1);padding:10px;border-radius:8px;border:1px solid var(--bd)">';
   h+='<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);margin-bottom:4px">Fallback Model</div>';
-  h+='<div style="font-weight:700;font-size:12px;color:var(--ac)"><i class="fas fa-bolt" style="margin-right:4px"></i>'+(cfg.fallbackModel||'liquid/lfm-2.5-1.2b-instruct:free')+'</div>';
+  h+='<div style="font-weight:700;font-size:12px;color:var(--ac)"><i class="fas fa-bolt" style="margin-right:4px"></i>'+(cfg.fallbackModel||'openai/gpt-oss-20b:free')+'</div>';
   h+='</div>';
   h+='</div>';
   h+='<div style="margin-top:8px;font-size:12px;color:var(--tx3)">Timeout: '+ ((cfg.timeout||30000)/1000) +'s &bull; Retry on: 429, 500, 502, 503, timeout</div>';
