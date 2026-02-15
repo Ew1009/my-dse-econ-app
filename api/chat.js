@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     
     // Prepare request body for OpenRouter
     const openRouterBody = {
-      model: 'liquid/lfm-2.5-1.2b-thinking:free',
+      model: 'meta-llama/llama-3.3-70b-instruct:free',
       messages: messages,
       max_tokens: (typeof maxTokens === 'number' && maxTokens > 0) ? maxTokens : 2000,
       temperature: (typeof temperature === 'number') ? temperature : 0.7
