@@ -159,7 +159,7 @@ window.AIHelper = (function() {
      code calls  window.AIHelper.callAI(prompt, opts)
      and gets back a Promise<string>.
      ──────────────────────────────────────────── */
-  function callAI(prompt, options) {
+  callAI: function(prompt, options) {
   options = options || {};
   const primaryModel = options.model || 'openai/gpt-oss-120b:free';
   const fallbackModel = 'openai/gpt-oss-20b:free';
