@@ -167,7 +167,7 @@ window.AIHelper = {
   getProviderInfo: function() {
     return {
       provider: 'OpenRouter',
-      model: 'qwen/qwen3-235b-a22b-thinking-2507',
+      model: 'openai/gpt-oss-20b:free',
       backend: '/api/chat'
     };
   }
