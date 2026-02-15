@@ -167,7 +167,7 @@ window.AIHelper = {
   getProviderInfo: function() {
     return {
       provider: 'OpenRouter',
-      model: 'google/gemma-3-27b-it:free',
+      model: 'liquid/lfm-2.5-1.2b-thinking:free',
       backend: '/api/chat'
     };
   }
