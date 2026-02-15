@@ -167,7 +167,7 @@ window.AIHelper = {
   getProviderInfo: function() {
     return {
       provider: 'OpenRouter',
-      model: 'arcee-ai/trinity-large-preview:free',
+      model: 'stepfun/step-3.5-flash:free',
       backend: '/api/chat'
     };
   }
