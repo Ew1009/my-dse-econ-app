@@ -3,7 +3,11 @@
    
    All AI calls go through window.AIHelper.callAI(prompt, options)
    which sends to /api/chat with body:
-   { prompt, systemPrompt, maxTokens, temperature }
+   { prompt, systemPrompt, maxTokens, temperature, model }
+   
+   v2.3 — Fallback is handled transparently inside ai-helper.js.
+          No changes needed here; all callAI() calls automatically
+          retry with the backup model on timeout / 429 / 5xx.
    ================================================================== */
 
 /* ---- Submit Long Q for AI Feedback ---- */
@@ -153,20 +157,38 @@ Sections['ai-gen']=function(c){
 
 /* ---- AI Settings Modal ---- */
 function showAiSettings(){
+  var cfg = window.AIHelper.getConfig ? window.AIHelper.getConfig() : {};
   var h='<h3 style="font-weight:700;margin-bottom:16px"><i class="fas fa-cog"></i> AI Settings</h3>';
   
   h+='<div style="background:var(--bg2);padding:14px;border-radius:8px;margin-bottom:16px">';
-  h+='<div style="font-size:13px;color:var(--tx2);margin-bottom:8px">Current Provider: <strong>OpenRouter (Arcee Trinity Large)</strong></div>';
+  h+='<div style="font-size:13px;color:var(--tx2);margin-bottom:8px">Current Provider: <strong>OpenRouter</strong></div>';
   h+='<div style="font-size:13px;color:var(--ok)"><i class="fas fa-check-circle"></i> API Key configured on server (Vercel Environment Variables)</div>';
+  h+='</div>';
+  
+  /* Fallback info card */
+  h+='<div style="background:rgba(16,185,129,.08);border-left:3px solid var(--ok);padding:12px;border-radius:6px;font-size:13px;margin-bottom:16px">';
+  h+='<div style="font-weight:600;margin-bottom:6px"><i class="fas fa-bolt"></i> Automatic Model Fallback</div>';
+  h+='<div style="line-height:1.6">If the primary model is slow or rate-limited, the app automatically retries with a fast backup model. You\'ll see a brief <em>"Switching to high-speed mode"</em> notification.</div>';
+  h+='<div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">';
+  h+='<div style="flex:1;min-width:150px;background:var(--bg1);padding:10px;border-radius:8px;border:1px solid var(--bd)">';
+  h+='<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);margin-bottom:4px">Primary Model</div>';
+  h+='<div style="font-weight:700;font-size:12px;color:var(--pr)"><i class="fas fa-star" style="margin-right:4px"></i>'+(cfg.primaryModel||'openai/gpt-oss-120b:free')+'</div>';
+  h+='</div>';
+  h+='<div style="flex:1;min-width:150px;background:var(--bg1);padding:10px;border-radius:8px;border:1px solid var(--bd)">';
+  h+='<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);margin-bottom:4px">Fallback Model</div>';
+  h+='<div style="font-weight:700;font-size:12px;color:var(--ac)"><i class="fas fa-bolt" style="margin-right:4px"></i>'+(cfg.fallbackModel||'liquid/lfm-2.5-1.2b-instruct:free')+'</div>';
+  h+='</div>';
+  h+='</div>';
+  h+='<div style="margin-top:8px;font-size:12px;color:var(--tx3)">Timeout: '+ ((cfg.timeout||30000)/1000) +'s &bull; Retry on: 429, 500, 502, 503, timeout</div>';
   h+='</div>';
   
   h+='<div style="background:rgba(6,182,212,.1);border-left:3px solid var(--ac);padding:12px;border-radius:6px;font-size:13px;margin-bottom:16px">';
   h+='<div style="font-weight:600;margin-bottom:4px"><i class="fas fa-info-circle"></i> About OpenRouter Integration</div>';
-  h+='<div style="line-height:1.5">This app uses OpenRouter API with the <strong>OpenAI: gpt-oss-120b</strong> model (free tier). Your API key is securely stored in Vercel Environment Variables and never exposed to the browser.</div>';
+  h+='<div style="line-height:1.5">This app uses OpenRouter API. Your API key is securely stored in Vercel Environment Variables and never exposed to the browser.</div>';
   h+='<ul style="margin:8px 0 0 20px;line-height:1.8">';
-  h+='<li>Model: <strong>openai/gpt-oss-120b:free</strong></li>';
   h+='<li>API calls are routed through <code>/api/chat</code> backend</li>';
   h+='<li>No client-side API key storage needed</li>';
+  h+='<li>Model parameter sent from frontend, whitelisted on server</li>';
   h+='</ul></div>';
   
   h+='<div style="background:rgba(245,158,11,.1);border-left:3px solid var(--wn);padding:12px;border-radius:6px;font-size:13px;margin-bottom:16px">';

@@ -1,102 +1,128 @@
-# DSE Econ v2.2 - AI Enhanced
+# DSE Econ v2.3 — AI Enhanced with Automatic Model Fallback
 
-HKDSE Economics study app with AI-powered features for MCQ practice, long question feedback, and analytics.
+An HKDSE Economics study web app with AI-powered features including MCQ practice, long-question feedback, AI question generation, and an AI tutor chatbot.
 
-## Currently Completed Features
+## ✅ Currently Completed Features
 
-### Core Features
-- **Dashboard** — Overview of study stats, recent activity, and quick navigation
-- **MCQ Practice (Paper 1)** — Multiple choice questions with 3 modes:
-  - **Topic Practice** — Instant feedback with explanations
-  - **Exam Mode** — Timed full exam simulation
-  - **Quiz Mode** — Timed quiz with review at end
-- **Long Questions (Paper 2)** — Essay-style questions with graph drawing tool
-- **Analytics** — Charts and statistics tracking performance over time
-- **AI Tutor** — AI-powered question generation and tutoring
-- **Dark/Light Theme** — Automatic detection + manual toggle
+### Core Study Features
+- **Dashboard** — Session stats, accuracy, study time, recent activity
+- **MCQ Practice** — Topic/exam/quiz modes with 600+ question bank
+- **Long Questions** — Structured part-by-part answering with graph drawing tool
+- **AI Feedback** — Submit long-question answers for AI grading & model answers
+- **AI Generation** — Generate custom MCQ/long questions on any HKDSE topic
+- **AI Tutor** — Conversational chatbot for Economics Q&A
+- **Analytics** — Trend charts, topic radar, session history
 
-### ✅ Ask AI Feature (MCQ) — NEW
-- **Topic Practice Mode**: When answering incorrectly, an "Ask AI to explain" button appears below the explanation. Clicking it sends the question context to the AI backend, which returns a personalized 3-4 sentence explanation of why the chosen answer is wrong and the correct one is right.
-- **Results Review Screen**: Every wrong answer in the review section has an "Ask AI to explain" button. Each button independently calls the AI for that specific question.
-- Uses `window.AIHelper.callAI()` → `/api/chat` (OpenRouter backend)
-- Gracefully handles AI unavailability with user-friendly messages
+### v2.3 — Automatic Model Fallback (NEW)
+- **Timeout wrapper**: Every AI request has a 30-second timeout
+- **Retry logic**: If the primary model fails (429 rate-limit, 500/502/503 server error, or timeout), the request is automatically retried using a fast backup model
+- **Backend model parameter**: `api/chat.js` accepts an optional `model` field (whitelisted)
+- **User feedback**: A subtle toast notification — *"Switching to high-speed mode…"* — appears when fallback is triggered
+- **Transparent to callers**: All existing `window.AIHelper.callAI()` calls benefit automatically with zero code changes
 
-## Functional Entry URIs
-
-| Path | Description |
-|------|-------------|
-| `index.html` | Main app entry point |
-| `/api/chat` | AI backend endpoint (POST) — expects `{ prompt, systemPrompt, maxTokens, temperature }` |
-
-### Navigation Views (client-side routing)
-- `dashboard` — Home/overview
-- `practice` — MCQ + Long Questions practice
-- `analytics` — Performance analytics
-- `ai` — AI Generation & Tutor
-
-## Project Structure
+## 📁 Project Structure
 
 ```
-index.html                    — Main HTML shell + script loading order
-css/
-  style.css                   — Main styles (dark/light theme, components)
-  question-formats.css        — Question formatting styles
-js/
-  app.js                      — Global state (S), utilities, nav, dashboard
-  ai-helper.js                — AIHelper module (routes to /api/chat)
-  questions.js                — TOPICS, MCQ_BANK, LQ_BANK data + legacy code
-  app-formatters.js           — Question text formatting (markdown, statements)
-  app-mcq.js                  — MCQ landing page / setup UI
-  app-mcq-session.js          — MCQ session render, Ask AI, finish, results
-  app-practice.js             — Unified practice section (MCQ + Long Q tabs)
-  app-longq.js                — Long question bank / landing
-  app-longq-session.js        — Long question session render
-  app-graph.js                — Graph drawing tool (canvas-based)
-  app-analytics.js            — Analytics section with charts
-  app-ai.js                   — AI generation, tutor, submitLongQ
+index.html                 Main app shell (SPA)
 api/
-  chat.js                     — Vercel serverless function for OpenRouter API
-ref/
-  v2.1.2.html                 — Reference monolithic v2.1.2 file
+  chat.js                  Vercel serverless function → OpenRouter API (accepts model param)
+css/
+  style.css                Main styles + dark mode
+  question-formats.css     Statement/option formatting styles
+js/
+  app.js                   Global state, utils, nav, dashboard, timer
+  ai-helper.js             ★ AI bridge with timeout + automatic fallback retry
+  questions.js             TOPICS, MCQ_BANK, LQ_BANK (222 KB question data)
+  app-formatters.js        Question text formatting (markdown, statements)
+  app-mcq.js               MCQ landing page
+  app-mcq-session.js       MCQ session render + AI explain
+  app-practice.js          Unified practice tab (MCQ + Long Q)
+  app-longq.js             Long Q landing + bank browser
+  app-longq-session.js     Long Q session render
+  app-graph.js             Canvas-based graph drawing tool
+  app-analytics.js         Analytics charts (Chart.js)
+  app-ai.js                AI Generation + Tutor + submitLongQ + Settings modal
 ```
 
-## Script Loading Order (Critical)
+## 🔀 Fallback Architecture
 
-1. `app.js` — Global state + utilities (MUST be first)
-2. `ai-helper.js` — `window.AIHelper` (MUST be before app-ai.js)
-3. `questions.js` — Data + legacy embedded code
-4. `app-formatters.js` — Question formatting
-5. `app-mcq.js` — MCQ setup UI
-6. `app-mcq-session.js` — MCQ session (overrides legacy code in questions.js)
-7. `app-practice.js` — Unified practice section
-8. `app-longq.js` — Long Q landing
-9. `app-longq-session.js` — Long Q session
-10. `app-graph.js` — Graph tool
-11. `app-analytics.js` — Analytics
-12. `app-ai.js` — AI functions
+```
+  Frontend                       Backend (api/chat.js)
+  ────────                       ────────────────────
+  callAI(prompt, opts)
+    │
+    ├─→ Attempt 1: POST /api/chat
+    │     body: { prompt, systemPrompt, model: "openai/gpt-oss-120b:free", ... }
+    │     timeout: 30s
+    │
+    │   Success? → return response ✅
+    │   Fail (429/500/502/503/timeout)?
+    │     ↓
+    │   toast("Switching to high-speed mode…")
+    │     ↓
+    ├─→ Attempt 2: POST /api/chat
+    │     body: { prompt, systemPrompt, model: "google/gemini-2.0-flash-lite:free", ... }
+    │     timeout: 30s
+    │
+    │   Success? → return response ✅
+    │   Fail? → throw error to caller ❌
+```
 
-## Data Models
+### Models
 
-### Global State (`window.S`)
-- `view` — Current view name
-- `mcq.ses` — Active MCQ session object
-- `mcq.history` — Past MCQ session results
-- `longQ.ses` — Active long question session
-- `longQ.history` — Past long question results
-- `stats` — Aggregated statistics (sessions, time, topics, etc.)
+| Role | Model ID | Notes |
+|------|----------|-------|
+| Primary | `openai/gpt-oss-120b:free` | High quality, may be slow or rate-limited |
+| Fallback | `google/gemini-2.0-flash-lite:free` | Fast, lightweight, free tier |
 
-### AI Backend (`/api/chat`)
-- **Request**: `{ prompt: string, systemPrompt?: string, maxTokens?: number, temperature?: number }`
-- **Response**: `{ response: string, usage: object }`
+### Backend Whitelist
+The backend only allows models listed in `ALLOWED_MODELS`. Any unknown model ID is silently replaced with the default.
 
-## Features Not Yet Implemented
-- Persistent data storage (currently in-memory only)
-- User authentication
-- Leaderboard / competitive features
-- Offline support / PWA
+## 🔗 Functional Entry URIs
 
-## Recommended Next Steps
-1. Add persistent storage using the Table API for session history and stats
-2. Add "Ask AI" to Long Question feedback for follow-up explanations
-3. Consider adding a "Bookmarks" feature for saving difficult questions
-4. Implement spaced repetition for weak topics
+| Path | Method | Description |
+|------|--------|-------------|
+| `/` | GET | Main SPA (index.html) |
+| `/api/chat` | POST | AI chat endpoint |
+
+### `/api/chat` Request Body
+```json
+{
+  "prompt": "string (required)",
+  "systemPrompt": "string (optional)",
+  "maxTokens": 2000,
+  "temperature": 0.7,
+  "model": "openai/gpt-oss-120b:free"
+}
+```
+
+### `/api/chat` Response
+```json
+{
+  "response": "AI response text",
+  "model": "openai/gpt-oss-120b:free",
+  "usage": { "prompt_tokens": 123, "completion_tokens": 456 }
+}
+```
+
+## 🔧 Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENROUTER_API_KEY` | Yes | API key from [openrouter.ai/keys](https://openrouter.ai/keys) |
+
+## 🚀 Deployment
+
+This is designed for **Vercel** deployment:
+1. Push to GitHub/GitLab
+2. Connect repo to Vercel
+3. Add `OPENROUTER_API_KEY` environment variable
+4. Deploy
+
+## 📝 Recommended Next Steps
+
+1. **Configurable models** — Let users pick primary/fallback models from the Settings modal
+2. **Retry count config** — Allow more than 1 fallback attempt (e.g., chain 3 models)
+3. **Response streaming** — Use SSE/streaming for faster perceived response times
+4. **Offline question bank** — Cache AI-generated questions in localStorage
+5. **Progress persistence** — Save study stats to a backend database

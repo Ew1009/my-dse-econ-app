@@ -1,7 +1,21 @@
 /**
  * Vercel Serverless Function for OpenRouter API
  * This handles all AI requests from the frontend
+ * 
+ * v2.3 — Now accepts an optional `model` parameter from the frontend
+ *         so the AI Helper can send fallback model IDs on retry.
+ * 
+ * Allowed models (whitelist):
+ *   - openai/gpt-oss-120b:free    (primary – high quality)
+ *   - liquid/lfm-2.5-1.2b-instruct:free  (fallback – fast & free)
  */
+
+const ALLOWED_MODELS = [
+  'openai/gpt-oss-120b:free',
+  'liquid/lfm-2.5-1.2b-instruct:free'
+];
+
+const DEFAULT_MODEL = 'openai/gpt-oss-120b:free';
 
 export default async function handler(req, res) {
   // Enable CORS for frontend requests
@@ -24,7 +38,7 @@ export default async function handler(req, res) {
     console.log('Received request body:', JSON.stringify(req.body).substring(0, 200));
     
     // Extract parameters from request body
-    const { prompt, systemPrompt, maxTokens, temperature } = req.body;
+    const { prompt, systemPrompt, maxTokens, temperature, model } = req.body;
     
     // Validate required fields
     if (!prompt || typeof prompt !== 'string') {
@@ -49,6 +63,20 @@ export default async function handler(req, res) {
       });
     }
     
+    // ---- Resolve which model to use ----
+    // If the frontend sends a model ID, use it (if whitelisted).
+    // Otherwise fall back to the default.
+    let resolvedModel = DEFAULT_MODEL;
+    if (model && typeof model === 'string') {
+      if (ALLOWED_MODELS.includes(model)) {
+        resolvedModel = model;
+      } else {
+        console.warn('Requested model not in whitelist, using default:', model);
+      }
+    }
+    
+    console.log('Using model:', resolvedModel);
+    
     // Build messages array for OpenRouter
     const messages = [];
     
@@ -66,11 +94,11 @@ export default async function handler(req, res) {
       content: prompt.trim()
     });
     
-    console.log('Calling OpenRouter with messages count:', messages.length);
+    console.log('Calling OpenRouter with model:', resolvedModel, 'messages count:', messages.length);
     
     // Prepare request body for OpenRouter
     const openRouterBody = {
-      model: 'openai/gpt-oss-120b:free',
+      model: resolvedModel,
       messages: messages,
       max_tokens: (typeof maxTokens === 'number' && maxTokens > 0) ? maxTokens : 2000,
       temperature: (typeof temperature === 'number') ? temperature : 0.7
@@ -91,7 +119,7 @@ export default async function handler(req, res) {
       body: JSON.stringify(openRouterBody)
     });
     
-    // Check if request was successful
+    // ---- Forward the HTTP status so the frontend can detect 429 etc. ----
     if (!response.ok) {
       const errorText = await response.text();
       let errorData;
@@ -105,6 +133,7 @@ export default async function handler(req, res) {
       
       return res.status(response.status).json({ 
         error: errorData.error?.message || errorData.message || `OpenRouter API request failed with status ${response.status}`,
+        status: response.status,
         details: errorData
       });
     }
@@ -114,6 +143,7 @@ export default async function handler(req, res) {
     
     // Log response structure for debugging
     console.log('OpenRouter response structure:', {
+      model: resolvedModel,
       hasChoices: !!data.choices,
       choicesLength: data.choices?.length,
       hasMessage: !!data.choices?.[0]?.message,
@@ -131,9 +161,10 @@ export default async function handler(req, res) {
       });
     }
     
-    // Return the AI response
+    // Return the AI response (include the model that was actually used)
     return res.status(200).json({ 
       response: aiResponse,
+      model: resolvedModel,
       usage: data.usage || {}
     });
     
