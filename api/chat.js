@@ -20,35 +20,64 @@ export default async function handler(req, res) {
   }
   
   try {
+    // Log incoming request for debugging
+    console.log('Received request body:', JSON.stringify(req.body).substring(0, 200));
+    
+    // Extract parameters from request body
     const { prompt, systemPrompt, maxTokens, temperature } = req.body;
     
     // Validate required fields
-    if (!prompt) {
-      return res.status(400).json({ error: 'Prompt is required' });
+    if (!prompt || typeof prompt !== 'string') {
+      console.error('Invalid prompt:', typeof prompt, prompt);
+      return res.status(400).json({ 
+        error: 'Prompt is required and must be a non-empty string' 
+      });
+    }
+    
+    if (prompt.trim().length === 0) {
+      return res.status(400).json({ 
+        error: 'Prompt cannot be empty' 
+      });
     }
     
     // Get API key from environment variable
     const apiKey = process.env.OPENROUTER_API_KEY;
     if (!apiKey) {
-      return res.status(500).json({ error: 'API key not configured on server' });
+      console.error('OPENROUTER_API_KEY not found in environment variables');
+      return res.status(500).json({ 
+        error: 'API key not configured on server. Please set OPENROUTER_API_KEY environment variable.' 
+      });
     }
     
     // Build messages array for OpenRouter
     const messages = [];
     
     // Add system message if provided
-    if (systemPrompt) {
+    if (systemPrompt && typeof systemPrompt === 'string' && systemPrompt.trim().length > 0) {
       messages.push({
         role: 'system',
-        content: systemPrompt
+        content: systemPrompt.trim()
       });
     }
     
     // Add user prompt
     messages.push({
       role: 'user',
-      content: prompt
+      content: prompt.trim()
     });
+    
+    console.log('Calling OpenRouter with messages count:', messages.length);
+    
+    // Prepare request body for OpenRouter
+    const openRouterBody = {
+      model: 'arcee-ai/arcee-trinity-large-preview:free',
+      messages: messages,
+      max_tokens: (typeof maxTokens === 'number' && maxTokens > 0) ? maxTokens : 2000,
+      temperature: (typeof temperature === 'number') ? temperature : 0.7
+    };
+    
+    // Get referer from request headers or use a default
+    const referer = req.headers.referer || req.headers.origin || 'https://dse-econ-app.vercel.app';
     
     // Call OpenRouter API
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -56,46 +85,63 @@ export default async function handler(req, res) {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': req.headers.referer || 'https://your-app.vercel.app',
-        'X-Title': 'DSE Economics App'
+        'HTTP-Referer': referer,
+        'X-Title': 'DSE Economics Study App'
       },
-      body: JSON.stringify({
-        model: 'arcee-ai/arcee-trinity-large-preview:free',
-        messages: messages,
-        max_tokens: maxTokens || 2000,
-        temperature: temperature !== undefined ? temperature : 0.7
-      })
+      body: JSON.stringify(openRouterBody)
     });
     
     // Check if request was successful
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('OpenRouter API error:', errorData);
+      const errorText = await response.text();
+      let errorData;
+      try {
+        errorData = JSON.parse(errorText);
+      } catch (e) {
+        errorData = { error: { message: errorText } };
+      }
+      
+      console.error('OpenRouter API error:', response.status, errorData);
+      
       return res.status(response.status).json({ 
-        error: errorData.error?.message || 'OpenRouter API request failed'
+        error: errorData.error?.message || errorData.message || `OpenRouter API request failed with status ${response.status}`,
+        details: errorData
       });
     }
     
     // Parse OpenRouter response
     const data = await response.json();
     
+    // Log response structure for debugging
+    console.log('OpenRouter response structure:', {
+      hasChoices: !!data.choices,
+      choicesLength: data.choices?.length,
+      hasMessage: !!data.choices?.[0]?.message,
+      hasContent: !!data.choices?.[0]?.message?.content
+    });
+    
     // Extract the AI response text
     const aiResponse = data.choices?.[0]?.message?.content;
     
     if (!aiResponse) {
-      return res.status(500).json({ error: 'No response from AI' });
+      console.error('No content in OpenRouter response:', JSON.stringify(data).substring(0, 500));
+      return res.status(500).json({ 
+        error: 'No response from AI. The API returned an unexpected format.',
+        rawResponse: data
+      });
     }
     
     // Return the AI response
     return res.status(200).json({ 
       response: aiResponse,
-      usage: data.usage
+      usage: data.usage || {}
     });
     
   } catch (error) {
-    console.error('Server error:', error);
+    console.error('Server error:', error.message, error.stack);
     return res.status(500).json({ 
-      error: error.message || 'Internal server error'
+      error: error.message || 'Internal server error',
+      type: error.name
     });
   }
 }

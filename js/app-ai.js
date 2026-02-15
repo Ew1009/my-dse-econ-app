@@ -1,10 +1,18 @@
 /* ==================================================================
    AI Functions Module - Replaces Poe API with direct AI API calls
+   
+   All AI calls go through window.AIHelper.callAI(prompt, options)
+   which sends to /api/chat with body:
+   { prompt, systemPrompt, maxTokens, temperature }
    ================================================================== */
 
 /* ---- Submit Long Q for AI Feedback ---- */
 function submitLongQ(c){
-  var ses=S.longQ.ses;if(!ses)return;
+  var ses=S.longQ.ses;
+  if(!ses){
+    console.error('submitLongQ: No active long-question session');
+    return;
+  }
   if(lqTimer)clearInterval(lqTimer);
 
   /* Check if any answers are empty */
@@ -19,44 +27,73 @@ function submitLongQ(c){
     return;
   }
 
-  /* Build prompt for AI feedback */
+  /* Build prompt string for AI feedback */
   var prompt='You are an expert HKDSE Economics teacher. Grade and give detailed feedback on this student\'s answer.\n\n';
-  prompt+='**Question: '+ses.question.title+'** ('+ses.question.marks+' marks total)\n\n';
+  prompt+='**Question: '+(ses.question.title||'Untitled Question')+'** ('+(ses.question.marks||0)+' marks total)\n\n';
+
   ses.question.parts.forEach(function(p,idx){
     var ans=(ses.answers[idx]||'').replace(/<[^>]*>/g,'').trim();
-    prompt+=p.label+' '+p.text+' ['+p.marks+' marks]\n';
+    prompt+=(p.label||('Part '+(idx+1)))+' '+(p.text||'')+' ['+(p.marks||0)+' marks]\n';
     prompt+='**Student\'s answer:** '+(ans||'(No answer provided)')+'\n\n';
   });
-  prompt+='\nFor each part:\n1. Award marks out of maximum\n2. State what was done well\n3. State what was missing or incorrect\n4. Provide a model answer\n\nEnd with overall marks, percentage, and key areas for improvement.\nFormat using Markdown.';
+
+  prompt+='\nFor each part:\n';
+  prompt+='1. Award marks out of maximum\n';
+  prompt+='2. State what was done well\n';
+  prompt+='3. State what was missing or incorrect\n';
+  prompt+='4. Provide a model answer\n\n';
+  prompt+='End with overall marks, percentage, and key areas for improvement.\n';
+  prompt+='Format using Markdown.';
+
+  /* Validate prompt is not empty before calling AI */
+  if(!prompt||!prompt.trim()){
+    console.error('submitLongQ: Built prompt is empty, aborting AI call');
+    toast('Error: Could not build feedback prompt','err');
+    lqTimer=setInterval(function(){if(!S.longQ.ses)return;S.longQ.ses.elapsed++;var el=document.getElementById('lqTimerDisp');if(el)el.textContent=fmtTime(S.longQ.ses.elapsed);},1000);
+    return;
+  }
+
+  console.log('submitLongQ: prompt built successfully, length='+prompt.length);
 
   ses.submitted=true;
 
-  /* Show loading */
+  /* Show loading overlay */
   document.getElementById('loadOv').style.display='flex';
   document.getElementById('loadTx').textContent='Getting AI Feedback...';
   document.getElementById('loadSub').textContent='Analyzing your answers';
 
-  /* Call AI */
+  /* Call AI — prompt is the first argument (string), options is the second argument (object) */
   window.AIHelper.callAI(prompt, {
-    systemPrompt: 'You are an expert HKDSE Economics teacher providing detailed feedback.',
-    maxTokens: 3000
+    systemPrompt: 'You are an expert HKDSE Economics teacher providing detailed feedback on student exam answers. Be thorough, constructive, and specific.',
+    maxTokens: 3000,
+    temperature: 0.5
   }).then(function(feedback){
     document.getElementById('loadOv').style.display='none';
     ses.feedback=feedback;
     /* Record history */
     var completed=0;
-    for(var j=0;j<ses.question.parts.length;j++){if((ses.answers[j]||'').replace(/<[^>]*>/g,'').trim())completed++;}
+    for(var j=0;j<ses.question.parts.length;j++){
+      if((ses.answers[j]||'').replace(/<[^>]*>/g,'').trim())completed++;
+    }
     S.longQ.history.push({
-      title:ses.question.title,qId:ses.question.id,ts:Date.now(),
-      duration:ses.elapsed,partsCompleted:completed,partsTotal:ses.question.parts.length,
-      feedbackReceived:true,feedback:ses.feedback
+      title:ses.question.title,
+      qId:ses.question.id,
+      ts:Date.now(),
+      duration:ses.elapsed,
+      partsCompleted:completed,
+      partsTotal:ses.question.parts.length,
+      feedbackReceived:true,
+      feedback:ses.feedback
     });
     recordActivity('long-q',0,ses.elapsed,ses.question.topic);
     renderLongQSession(c);
     toast('Feedback received!','ok');
   }).catch(function(err){
     document.getElementById('loadOv').style.display='none';
+    console.error('submitLongQ: AI call failed:', err.message);
     toast('Failed to get feedback: '+err.message,'err');
+    /* Re-allow editing — restart timer */
+    ses.submitted=false;
     lqTimer=setInterval(function(){if(!S.longQ.ses)return;S.longQ.ses.elapsed++;var el=document.getElementById('lqTimerDisp');if(el)el.textContent=fmtTime(S.longQ.ses.elapsed);},1000);
   });
 }
@@ -192,25 +229,45 @@ function buildGenPrompt(type,topic,diff,count,focus){
 function startAigGeneration(c){
   var typeEl=c.querySelector('#aigTypeCards .type-card.sel');
   var type=typeEl?typeEl.dataset.gtype:'mcq';
-  var topic=document.getElementById('aigTopic').value;
-  var diff=document.getElementById('aigDiff').value;
-  var count=document.getElementById('aigCount').value;
-  var focus=document.getElementById('aigFocus').value.trim();
+  var topicEl=document.getElementById('aigTopic');
+  var diffEl=document.getElementById('aigDiff');
+  var countEl=document.getElementById('aigCount');
+  var focusEl=document.getElementById('aigFocus');
+
+  var topic=topicEl?topicEl.value:'any';
+  var diff=diffEl?diffEl.value:'mixed';
+  var count=countEl?countEl.value:'5';
+  var focus=focusEl?focusEl.value.trim():'';
+
+  /* Build the prompt string */
   var prompt=buildGenPrompt(type,topic,diff,count,focus);
+
+  /* Validate prompt is not empty before calling AI */
+  if(!prompt||!prompt.trim()){
+    console.error('startAigGeneration: prompt is empty, aborting');
+    toast('Error: Could not build generation prompt. Please try again.','err');
+    return;
+  }
+
+  console.log('startAigGeneration: prompt built, type='+type+', length='+prompt.length);
+
   var output=document.getElementById('aigOutput');
   output.innerHTML='<div class="card"><div class="card-body" style="text-align:center;padding:40px"><div class="spinner"></div><div style="font-weight:600;margin-bottom:4px">Generating '+count+' '+type.toUpperCase()+' questions...</div><div style="font-size:13px;color:var(--tx3)">This may take a moment</div></div></div>';
-  var genBtn=document.getElementById('aigGenBtn');if(genBtn)genBtn.disabled=true;
+  var genBtn=document.getElementById('aigGenBtn');
+  if(genBtn)genBtn.disabled=true;
 
-  window.AIHelper.callAI(prompt,{
-    systemPrompt:'You are an expert HKDSE Economics question writer. Return valid JSON only.',
-    maxTokens:3000,
-    temperature:0.8
+  /* Call AI — prompt is the first argument (string), options is the second argument (object) */
+  window.AIHelper.callAI(prompt, {
+    systemPrompt: 'You are an expert HKDSE Economics question writer. Return valid JSON only.',
+    maxTokens: 3000,
+    temperature: 0.8
   }).then(function(content){
     if(genBtn)genBtn.disabled=false;
     parseAndRenderGenResults(output,content,type);
     S.aiGen.history.push({type:type,topic:topic,diff:diff,count:count,focus:focus,content:content,ts:Date.now()});
   }).catch(function(err){
-    output.innerHTML='<div class="card"><div class="card-body" style="color:var(--no);text-align:center;padding:20px"><i class="fas fa-exclamation-triangle" style="font-size:24px;margin-bottom:8px"></i><div>Error: '+esc(err.message)+'</div></div></div>';
+    console.error('startAigGeneration: AI call failed:', err.message);
+    output.innerHTML='<div class="card"><div class="card-body" style="color:var(--no);text-align:center;padding:20px"><i class="fas fa-exclamation-triangle" style="font-size:24px;margin-bottom:8px"></i><div>Error: '+esc(err.message)+'</div><div style="font-size:12px;color:var(--tx3);margin-top:8px">Check the browser console for details</div></div></div>';
     if(genBtn)genBtn.disabled=false;
   });
 }
@@ -321,29 +378,40 @@ function wireAigTutor(c){
   var inp=document.getElementById('tutorInput');
   if(!sendBtn||!inp)return;
   function doSend(){
-    var txt=inp.value.trim();if(!txt)return;
+    var txt=inp.value.trim();
+    if(!txt){
+      toast('Please type a question first','info');
+      return;
+    }
     inp.value='';
     tutorMsgs.push({role:'user',text:txt});
     tutorMsgs.push({role:'ai',text:''});
     refreshTutorChat();
     
+    /* Build conversation context for the AI */
     var conversationContext='';
     tutorMsgs.slice(0,-1).forEach(function(m2){
       if(m2.role==='user')conversationContext+='Student: '+m2.text+'\n';
       else if(m2.text)conversationContext+='Tutor: '+m2.text+'\n';
     });
     
+    /* Build the prompt string — must be non-empty */
     var prompt=conversationContext+'Student: '+txt+'\nTutor:';
 
-    window.AIHelper.callAI(prompt,{
-      systemPrompt:'You are an expert HKDSE Economics tutor. Give clear, concise explanations with examples relevant to Hong Kong. Use markdown formatting.',
-      maxTokens:1500
+    console.log('wireAigTutor.doSend: prompt built, length='+prompt.length);
+
+    /* Call AI — prompt is the first argument (string), options is the second argument (object) */
+    window.AIHelper.callAI(prompt, {
+      systemPrompt: 'You are an expert HKDSE Economics tutor. Give clear, concise explanations with examples relevant to Hong Kong. Use markdown formatting.',
+      maxTokens: 1500,
+      temperature: 0.7
     }).then(function(response){
       if(tutorMsgs.length>0){
         tutorMsgs[tutorMsgs.length-1].text=response;
         refreshTutorChat();
       }
     }).catch(function(err){
+      console.error('wireAigTutor.doSend: AI call failed:', err.message);
       if(tutorMsgs.length>0){
         tutorMsgs[tutorMsgs.length-1].text='Error: '+err.message;
         refreshTutorChat();
