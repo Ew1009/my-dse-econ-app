@@ -167,7 +167,7 @@ window.AIHelper = {
   getProviderInfo: function() {
     return {
       provider: 'OpenRouter',
-      model: 'meta-llama/llama-3.3-70b-instruct:free',
+      model: 'z-ai/glm-4.5-air:free',
       backend: '/api/chat'
     };
   }
