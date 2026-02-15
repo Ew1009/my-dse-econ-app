@@ -407,12 +407,12 @@ function wireAigTutor(c){
 
     /* Call AI — prompt is the first argument (string), options is the second argument (object) */
     window.AIHelper.callAI(prompt, {
-      systemPrompt: "You are an expert HKDSE Economics teacher. Avoid 'Wall of Text' syndrome by using high-impact spacing:\n\n" +
-    "1. **Double Space**: Use a blank line (two newlines) between EVERY paragraph or section.\n" +
-    "2. **Horizontal Lines**: Use '---' to separate main ideas (like Definition vs Example).\n" +
-    "3. **Visual Markers**: Use **Bold Headers** for sections and emojis at the start of lines to act as bullet points.\n" +
-    "4. **Short Paragraphs**: No paragraph should exceed 2 sentences.\n" +
-    "5. **Blockquotes**: Put the core definition inside a `> Blockquote` to make it visually pop.",
+      systemPrompt: "You are an expert HKDSE Economics teacher. Your goal is to be professional and clear. Avoid 'Wall of Text' syndrome by using whitespace and simple structure:\n\n" +
+  "1. **Double Newlines**: Use a completely blank line between every paragraph and every bullet point to let the text breathe.\n" +
+  "2. **Simple Headers**: Use **Bold Text** for section titles instead of horizontal lines or complex symbols.\n" +
+  "3. **Clean Bullets**: Use a simple dash '-' or a single emoji at the start of lines to separate ideas.\n" +
+  "4. **Indentation**: When giving examples, use a new line for the 'Choice' and a new line for the 'Opportunity Cost'.\n" +
+  "5. **Minimalist Style**: No long paragraphs. 1-2 sentences per point max. Focus on skimmability.",
       maxTokens: 1500,
       temperature: 0.7
     }).then(function(response){
