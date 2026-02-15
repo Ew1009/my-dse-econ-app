@@ -167,7 +167,7 @@ window.AIHelper = {
   getProviderInfo: function() {
     return {
       provider: 'OpenRouter',
-      model: 'z-ai/glm-4.5-air:free',
+      model: 'arcee-ai/trinity-large-preview:free',
       backend: '/api/chat'
     };
   }
