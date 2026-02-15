@@ -70,7 +70,7 @@ export default async function handler(req, res) {
     
     // Prepare request body for OpenRouter
     const openRouterBody = {
-      model: 'arcee-ai/arcee-trinity-large-preview:free',
+      model: 'arcee-ai/trinity-large-preview:free',
       messages: messages,
       max_tokens: (typeof maxTokens === 'number' && maxTokens > 0) ? maxTokens : 2000,
       temperature: (typeof temperature === 'number') ? temperature : 0.7
