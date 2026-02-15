@@ -1,0 +1,31 @@
+# API Keys and sensitive data
+js/config.js
+
+# Node modules (if using build tools later)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary files
+*.tmp
+*.log
+*.cache
+
+# Build outputs (if using build tools)
+dist/
+build/
+.cache/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
