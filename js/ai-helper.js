@@ -159,24 +159,9 @@ window.AIHelper = (function() {
      code calls  window.AIHelper.callAI(prompt, opts)
      and gets back a Promise<string>.
      ──────────────────────────────────────────── */
-  callAI: function(prompt, options) {
+  function callAI(prompt, options) {
   options = options || {};
-  const primaryModel = options.model || 'openai/gpt-oss-120b:free';
-  const fallbackModel = 'openai/gpt-oss-20b:free';
-
-  // Primary attempt
-  return this.attemptFetch(prompt, { ...options, model: primaryModel })
-    .catch(err => {
-      // If primary fails with 429 (Rate Limit), wait 2s and try fallback
-      if (err.message.includes('429')) {
-        console.warn("Primary model rate limited. Retrying with fallback...");
-        return new Promise(res => setTimeout(res, 2000)) 
-          .then(() => this.attemptFetch(prompt, { ...options, model: fallbackModel }));
-      }
-      throw err;
-    });
-}
-
+ 
     // ---- Validate prompt ----
     if (typeof prompt !== 'string') {
       console.error('AIHelper.callAI: prompt is not a string, got:', typeof prompt, prompt);
