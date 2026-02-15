@@ -11,7 +11,7 @@ function renderLongQSession(c){
   /* Question header */
   h+='<div class="card" style="margin-bottom:16px"><div class="card-body">';
   h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap"><span class="badge badge-p">'+(tp?tp.name:'')+'</span><span style="font-weight:700;font-size:15px">'+esc(q.title)+'</span></div>';
-  h+='<div style="display:flex;gap:8px;align-items:baseline;margin-bottom:8px"><span style="font-weight:800;color:var(--pr);font-size:16px">'+part.label+'</span><span style="font-size:15px;line-height:1.6">'+esc(part.text)+'</span></div>';
+  h+='<div class="question-text" style="display:flex;gap:8px;align-items:baseline;margin-bottom:8px"><span style="font-weight:800;color:var(--pr);font-size:16px">'+part.label+'</span><span style="font-size:15px;line-height:1.6">'+formatQuestionText(part.text)+'</span></div>';
   h+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge" style="background:var(--ac)18;color:var(--ac)">'+part.marks+' marks</span>';
   h+='<button class="btn btn-ghost btn-sm" id="lqHintBtn"><i class="fas fa-lightbulb" style="color:var(--wn)"></i>Show Hint</button>';
   h+='<div id="lqHintBox" style="display:none;margin-top:10px;padding:12px;background:rgba(245,158,11,.08);border-radius:8px;border-left:3px solid var(--wn);font-size:13px;color:var(--tx2)"></div>';
