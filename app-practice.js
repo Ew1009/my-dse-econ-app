@@ -80,17 +80,28 @@ function wireMcqLanding(c){
   var topicItems=c.querySelectorAll('#topicTopicList .topic-sel-item');
   topicItems.forEach(function(el){
     el.onclick=function(){
-      /* Single-select: clicking one deselects others */
-      topicItems.forEach(function(e){e.classList.remove('sel');});
-      el.classList.add('sel');
+      var tid=el.dataset.tid;
+      if(tid==='all'){
+        /* select all: clear others and keep all selected state on "all" */
+        topicItems.forEach(function(e){e.classList.remove('sel');});
+        el.classList.add('sel');
+        return;
+      }
+      /* toggle selection for individual topics; deselect 'all' if any other selected */
+      el.classList.toggle('sel');
+      var allEl=c.querySelector('#topicTopicList .topic-sel-item[data-tid="all"]');
+      if(allEl && allEl.classList.contains('sel')) allEl.classList.remove('sel');
     };
   });
   var topicStartBtn=document.getElementById('topicStartBtn');
   if(topicStartBtn)topicStartBtn.onclick=function(){
-    var selTid=null;
-    c.querySelectorAll('#topicTopicList .topic-sel-item.sel').forEach(function(e){selTid=e.dataset.tid;});
-    if(!selTid){toast('Select a topic','err');return;}
-    var topics=selTid==='all'?TOPICS.map(function(t){return t.id;}):[selTid];
+    var selEls=c.querySelectorAll('#topicTopicList .topic-sel-item.sel');
+    if(!selEls.length){toast('Select a topic','err');return;}
+    var topics=[];
+    // if 'all' selected use full list
+    var allSel=Array.from(selEls).some(function(e){return e.dataset.tid==='all';});
+    if(allSel)topics=TOPICS.map(function(t){return t.id;});
+    else selEls.forEach(function(e){topics.push(e.dataset.tid);});
     var count=parseInt(document.getElementById('topicQCount').value,10);
     var hasTime=document.getElementById('topicTimeCheck').checked;
     startMcqSession(hasTime?'quiz':'topic',topics,count);

@@ -1,4 +1,4 @@
-:root{--pr:#2563eb;--prd:#1d4ed8;--ac:#06b6d4;--ok:#10b981;--wn:#f59e0b;--no:#ef4444;--bg0:#f8fafc;--bg1:#fff;--bg2:#f1f5f9;--tx1:#1e293b;--tx2:#475569;--tx3:#94a3b8;--bd:#e2e8f0;--sh:0 1px 3px rgba(0,0,0,.1);--shl:0 10px 15px -3px rgba(0,0,0,.1)}
+﻿:root{--pr:#2563eb;--prd:#1d4ed8;--ac:#06b6d4;--ok:#10b981;--wn:#f59e0b;--no:#ef4444;--bg0:#f8fafc;--bg1:#fff;--bg2:#f1f5f9;--tx1:#1e293b;--tx2:#475569;--tx3:#94a3b8;--bd:#e2e8f0;--sh:0 1px 3px rgba(0,0,0,.1);--shl:0 10px 15px -3px rgba(0,0,0,.1)}
 .dark{--pr:#3b82f6;--prd:#2563eb;--bg0:#0f172a;--bg1:#1e293b;--bg2:#334155;--tx1:#f1f5f9;--tx2:#cbd5e1;--tx3:#64748b;--bd:#334155}
 *{box-sizing:border-box;margin:0;padding:0}body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg0);color:var(--tx1);min-height:100vh;overflow:hidden}
 ::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--bd);border-radius:3px}
@@ -65,7 +65,7 @@
 .mcq-opt.c-ok .opt-let{background:var(--ok);color:#fff}
 .mcq-opt.c-wrong .opt-let{background:var(--no);color:#fff}
 .opt-tx{flex:1;line-height:1.5;font-size:13px}
-.ans-sec{margin-top:14px;padding:14px;background:rgba(16,185,129,.08);border-radius:8px;border-left:3px solid var(--ok)}
+.ans-sec{margin-top:20px;padding:20px;background:rgba(16,185,129,.08);border-radius:8px;border-left:3px solid var(--ok)}
 .quiz-ctr{max-width:800px;margin:0 auto}
 .quiz-prog{display:flex;align-items:center;gap:14px;margin-bottom:20px}
 .quiz-prog-tx{font-weight:600;color:var(--tx2);white-space:nowrap;font-size:14px}
@@ -75,6 +75,7 @@
 .timer-disp{font-size:42px;font-weight:800;font-variant-numeric:tabular-nums}
 .timer-disp.warn{color:var(--wn)}.timer-disp.crit{color:var(--no)}
 .quiz-acts{display:flex;justify-content:space-between;margin-top:20px}
+.quiz-ctr.long-q .quiz-acts{display:flex;flex-direction:column;gap:16px}
 .res-sum{text-align:center;padding:36px;background:linear-gradient(135deg,var(--pr),var(--ac));border-radius:16px;color:#fff;margin-bottom:24px}
 .res-score{font-size:64px;font-weight:800;margin-bottom:6px}.res-lbl{font-size:16px;opacity:.9}
 .res-bd{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:20px}
@@ -104,6 +105,7 @@
 .rich-bar button{background:var(--bg1);border:1px solid var(--bd);border-radius:4px;padding:5px 9px;cursor:pointer;color:var(--tx2);font-size:13px;transition:all .15s}
 .rich-bar button:hover{background:rgba(37,99,235,.1);color:var(--pr)}
 .rich-ta{border-top:none !important;border-radius:0 0 8px 8px !important}
+#lqEditor.form-inp.rich-ta{min-height:600px !important;max-height:800px !important;line-height:1.8 !important;font-size:16px !important;width:100% !important}
 .split-view{display:flex;gap:16px;flex-direction:column}
 .accord-head{cursor:pointer;padding:12px 16px;display:flex;align-items:center;gap:10px;font-weight:600;font-size:14px;border-bottom:1px solid var(--bd);transition:background .15s}
 .accord-head:hover{background:var(--bg2)}

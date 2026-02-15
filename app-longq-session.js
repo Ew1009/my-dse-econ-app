@@ -6,7 +6,7 @@ function renderLongQSession(c){
 
   var h='<div class="quiz-ctr page-sec active">';
   /* Progress */
-  h+='<div class="quiz-prog"><span class="quiz-prog-tx">Part '+(pidx+1)+'/'+q.parts.length+'</span><div class="quiz-prog-bar"><div class="quiz-prog-fill" style="width:'+pct+'%"></div><span class="quiz-prog-tx" id="lqTimerDisp">'+fmtTime(ses.elapsed)+'</span></div>';
+  h+='<div class="quiz-prog"><span class="quiz-prog-tx">Part '+(pidx+1)+'/'+q.parts.length+'</span><div class="quiz-prog-bar"><div class="quiz-prog-fill" style="width:'+pct+'%"></div></div><span class="quiz-prog-tx" id="lqTimerDisp">'+fmtTime(ses.elapsed)+'</span></div>';
 
   /* Question header */
   h+='<div class="card" style="margin-bottom:16px"><div class="card-body">';
@@ -14,7 +14,6 @@ function renderLongQSession(c){
   h+='<div style="display:flex;gap:8px;align-items:baseline;margin-bottom:8px"><span style="font-weight:800;color:var(--pr);font-size:16px">'+part.label+'</span><span style="font-size:15px;line-height:1.6">'+esc(part.text)+'</span></div>';
   h+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="badge" style="background:var(--ac)18;color:var(--ac)">'+part.marks+' marks</span>';
   h+='<button class="btn btn-ghost btn-sm" id="lqHintBtn"><i class="fas fa-lightbulb" style="color:var(--wn)"></i>Show Hint</button>';
-  h+='</div>';
   h+='<div id="lqHintBox" style="display:none;margin-top:10px;padding:12px;background:rgba(245,158,11,.08);border-radius:8px;border-left:3px solid var(--wn);font-size:13px;color:var(--tx2)"></div>';
   h+='</div></div>';
 
@@ -85,7 +84,12 @@ function renderLongQSession(c){
         var cv=document.getElementById('lqCanvas');
         GraphTool.init(cv);
         if(ses.graphs[pidx]){
-          var im=new Image();im.onload=function(){GraphTool.drawGrid();GraphTool.ctx.drawImage(im,0,0,cv.width/(window.devicePixelRatio||1),cv.height/(window.devicePixelRatio||1));};im.src=ses.graphs[pidx];
+          var im=new Image();
+          im.onload=function(){
+            GraphTool.drawGrid();
+            GraphTool.ctx.drawImage(im,0,0,cv.width/(window.devicePixelRatio||1),cv.height/(window.devicePixelRatio||1));
+          };
+          im.src=ses.graphs[pidx];
         }
       }
     };
@@ -116,10 +120,12 @@ function renderLongQSession(c){
     graphInited=true;
     GraphTool.init(canvas);
     if(ses.graphs[pidx]){
-      var img=new Image();img.onload=function(){
+      var img=new Image();
+      img.onload=function(){
         GraphTool.drawGrid();
         GraphTool.ctx.drawImage(img,0,0,canvas.width/(window.devicePixelRatio||1),canvas.height/(window.devicePixelRatio||1));
-      };img.src=ses.graphs[pidx];
+      };
+      img.src=ses.graphs[pidx];
     }
   }
 
@@ -141,9 +147,12 @@ function renderLongQSession(c){
         document.getElementById('graphLabelOk').onclick=function(){
           label=document.getElementById('graphLabelInp').value;Modal.hide();
           if(label){
-            var cFont='bold 14px Plus Jakarta Sans, sans-serif';GraphTool.ctx.font=cFont;GraphTool.ctx.fillStyle=GraphTool.color;
+            var cFont='bold 14px Plus Jakarta Sans, sans-serif';
+            GraphTool.ctx.font=cFont;
+            GraphTool.ctx.fillStyle=GraphTool.color;
             /* Place in center - user can use pen to mark where */
-            var cw2=canvas.width/(window.devicePixelRatio||1);var ch2=canvas.height/(window.devicePixelRatio||1);
+            var cw2=canvas.width/(window.devicePixelRatio||1);
+            var ch2=canvas.height/(window.devicePixelRatio||1);
             GraphTool.ctx.fillText(label,cw2/2,ch2/2);
             GraphTool.paths.push({pts:[{x:cw2/2,y:ch2/2}],color:GraphTool.color,width:1,mode:'text',label:label});
           }
@@ -152,7 +161,9 @@ function renderLongQSession(c){
       }
       GraphTool.mode=tool;
       document.querySelectorAll('.lqg-btn').forEach(function(b){b.style.background='';b.style.color='';b.style.borderColor='';});
-      btn.style.background='rgba(37,99,235,.1)';btn.style.color='var(--pr)';btn.style.borderColor='var(--pr)';
+      btn.style.background='rgba(37,99,235,.1)';
+      btn.style.color='var(--pr)';
+      btn.style.borderColor='var(--pr)';
     };
   });
   document.getElementById('lqGraphColor').onchange=function(){GraphTool.color=this.value;};

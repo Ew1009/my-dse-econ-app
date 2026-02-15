@@ -40,10 +40,15 @@ function renderMcqLanding(){
   h+='<div style="font-weight:700;font-size:13px;margin-bottom:10px">Select Topic</div>';
   h+='<div class="topic-sel-grid" id="topicTopicList">';
   /* All Topics option */
-  h+='<div class="topic-sel-item sel" data-tid="all"><i class="fas fa-th-large"></i><span style="flex:1">All Topics</span><span style="color:var(--tx3);font-size:12px">('+totalQ+')</span></div>';
-  TOPICS.forEach(function(t){
-    var cnt=mcqCountByTopic(t.id);
-    h+='<div class="topic-sel-item" data-tid="'+t.id+'"><i class="fas '+t.icon+'"></i><span style="flex:1">'+t.name+'</span><span style="color:var(--tx3);font-size:12px">('+cnt+')</span></div>';
+  h+='<div style="margin-bottom:10px"><div class="topic-sel-item sel" data-tid="all" style="width:100%"><i class="fas fa-th-large"></i><span style="flex:1">All Topics</span><span style="color:var(--tx3);font-size:12px">('+totalQ+')</span></div></div>';
+  /* Group by category: Micro then Macro */
+  ['Micro','Macro'].forEach(function(cat){
+    h+='<div style="margin-bottom:8px"><div style="font-weight:700;margin-bottom:6px">'+cat+'</div>';
+    TOPICS.filter(function(t){return t.cat===cat;}).forEach(function(t){
+      var cnt=mcqCountByTopic(t.id);
+      h+='<div class="topic-sel-item" data-tid="'+t.id+'"><i class="fas '+t.icon+'"></i><span style="flex:1">'+t.name+'</span><span style="color:var(--tx3);font-size:12px">('+cnt+')</span></div>';
+    });
+    h+='</div>';
   });
   h+='</div>';
   h+='<div style="font-weight:700;font-size:13px;margin:18px 0 10px">Number of Questions</div>';
@@ -73,9 +78,13 @@ function renderMcqLanding(){
   h+='<p style="color:var(--tx2);font-size:13px;margin-bottom:16px">Timed challenge! Question count is based on time selected.</p>';
   h+='<div style="font-weight:700;font-size:13px;margin-bottom:10px">Select Topics (multiple allowed)</div>';
   h+='<div class="topic-sel-grid" id="quizTopicList">';
-  TOPICS.forEach(function(t){
-    var cnt=mcqCountByTopic(t.id);
-    h+='<div class="topic-sel-item" data-tid="'+t.id+'"><i class="fas '+t.icon+'"></i><span style="flex:1">'+t.name+'</span><span style="color:var(--tx3);font-size:12px">('+cnt+')</span></div>';
+  ['Micro','Macro'].forEach(function(cat){
+    h+='<div style="margin-bottom:8px"><div style="font-weight:700;margin-bottom:6px">'+cat+'</div>';
+    TOPICS.filter(function(t){return t.cat===cat;}).forEach(function(t){
+      var cnt=mcqCountByTopic(t.id);
+      h+='<div class="topic-sel-item" data-tid="'+t.id+'"><i class="fas '+t.icon+'"></i><span style="flex:1">'+t.name+'</span><span style="color:var(--tx3);font-size:12px">('+cnt+')</span></div>';
+    });
+    h+='</div>';
   });
   h+='</div>';
   h+='<div style="font-weight:700;font-size:13px;margin:18px 0 10px">Time Limit</div>';
