@@ -31,7 +31,7 @@ window.AIHelper = (function() {
      Configuration
      ──────────────────────────────────────────── */
   var PRIMARY_MODEL   = 'openai/gpt-oss-120b:free';
-  var FALLBACK_MODEL  = 'liquid/lfm-2.5-1.2b-instruct:free';
+  var FALLBACK_MODEL  = 'openai/gpt-oss-20b:free';
   var REQUEST_TIMEOUT = 30000;   // 30 seconds
   var RETRYABLE_CODES = [429, 500, 502, 503];
 
