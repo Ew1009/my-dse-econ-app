@@ -167,7 +167,7 @@ window.AIHelper = {
   getProviderInfo: function() {
     return {
       provider: 'OpenRouter',
-      model: 'deepseek/deepseek-r1-0528:free',
+      model: 'openai/gpt-oss-120b:free',
       backend: '/api/chat'
     };
   }
