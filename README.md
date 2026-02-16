@@ -1,128 +1,147 @@
-# DSE Econ v2.3 — AI Enhanced with Automatic Model Fallback
+# DSE Economics v2.2 - AI Enhanced
 
-An HKDSE Economics study web app with AI-powered features including MCQ practice, long-question feedback, AI question generation, and an AI tutor chatbot.
+## Overview
+A comprehensive HKDSE Economics practice web app with MCQ and Long Question modules, AI-powered tutoring, analytics dashboard, and now **SVG-based economics diagrams**.
 
-## ✅ Currently Completed Features
-
-### Core Study Features
-- **Dashboard** — Session stats, accuracy, study time, recent activity
-- **MCQ Practice** — Topic/exam/quiz modes with 600+ question bank
-- **Long Questions** — Structured part-by-part answering with graph drawing tool
-- **AI Feedback** — Submit long-question answers for AI grading & model answers
-- **AI Generation** — Generate custom MCQ/long questions on any HKDSE topic
-- **AI Tutor** — Conversational chatbot for Economics Q&A
-- **Analytics** — Trend charts, topic radar, session history
-
-### v2.3 — Automatic Model Fallback (NEW)
-- **Timeout wrapper**: Every AI request has a 30-second timeout
-- **Retry logic**: If the primary model fails (429 rate-limit, 500/502/503 server error, or timeout), the request is automatically retried using a fast backup model
-- **Backend model parameter**: `api/chat.js` accepts an optional `model` field (whitelisted)
-- **User feedback**: A subtle toast notification — *"Switching to high-speed mode…"* — appears when fallback is triggered
-- **Transparent to callers**: All existing `window.AIHelper.callAI()` calls benefit automatically with zero code changes
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-index.html                 Main app shell (SPA)
-api/
-  chat.js                  Vercel serverless function → OpenRouter API (accepts model param)
+index.html                    — Main app entry point
 css/
-  style.css                Main styles + dark mode
-  question-formats.css     Statement/option formatting styles
+  ├── style.css               — Core app styles (layout, nav, cards, dark mode)
+  └── question-formats.css    — Question rendering styles + graph/diagram CSS
 js/
-  app.js                   Global state, utils, nav, dashboard, timer
-  ai-helper.js             ★ AI bridge with timeout + automatic fallback retry
-  questions.js             TOPICS, MCQ_BANK, LQ_BANK (222 KB question data)
-  app-formatters.js        Question text formatting (markdown, statements)
-  app-mcq.js               MCQ landing page
-  app-mcq-session.js       MCQ session render + AI explain
-  app-practice.js          Unified practice tab (MCQ + Long Q)
-  app-longq.js             Long Q landing + bank browser
-  app-longq-session.js     Long Q session render
-  app-graph.js             Canvas-based graph drawing tool
-  app-analytics.js         Analytics charts (Chart.js)
-  app-ai.js                AI Generation + Tutor + submitLongQ + Settings modal
+  ├── app.js                  — Global state (S), utilities, nav, dashboard
+  ├── ai-helper.js            — AI backend bridge (OpenRouter via /api/chat)
+  ├── questions.js             — TOPICS, MCQ_BANK, LQ_BANK question data
+  ├── app-formatters.js        — formatQuestionText() + all table/statement/diagram formatters
+  ├── app-graphs.js            — ★ NEW: SVG economics diagram generator (generateGraphHTML)
+  ├── app-mcq.js               — MCQ landing page HTML
+  ├── app-mcq-session.js       — MCQ session rendering + result review + graph integration
+  ├── app-practice.js          — Unified practice section (MCQ + Long Q tabs)
+  ├── app-longq.js             — Long question bank + landing
+  ├── app-longq-session.js     — Long question session rendering
+  ├── app-graph.js             — Canvas drawing tool for Long Q diagrams
+  ├── app-analytics.js         — Analytics/stats dashboard
+  └── app-ai.js                — AI generation, tutor, Long Q feedback
+api/
+  └── chat.js                  — Vercel serverless function for OpenRouter API
 ```
 
-## 🔀 Fallback Architecture
+## Entry URIs
 
-```
-  Frontend                       Backend (api/chat.js)
-  ────────                       ────────────────────
-  callAI(prompt, opts)
-    │
-    ├─→ Attempt 1: POST /api/chat
-    │     body: { prompt, systemPrompt, model: "openai/gpt-oss-120b:free", ... }
-    │     timeout: 30s
-    │
-    │   Success? → return response ✅
-    │   Fail (429/500/502/503/timeout)?
-    │     ↓
-    │   toast("Switching to high-speed mode…")
-    │     ↓
-    ├─→ Attempt 2: POST /api/chat
-    │     body: { prompt, systemPrompt, model: "google/gemini-2.0-flash-lite:free", ... }
-    │     timeout: 30s
-    │
-    │   Success? → return response ✅
-    │   Fail? → throw error to caller ❌
-```
+| Path | Description |
+|------|-------------|
+| `index.html` | Main application entry |
+| `index.html#dashboard` | Dashboard view |
+| `index.html#practice` | Practice section (MCQ + Long Q) |
+| `index.html#analytics` | Analytics & stats |
 
-### Models
+## Currently Completed Features
 
-| Role | Model ID | Notes |
-|------|----------|-------|
-| Primary | `openai/gpt-oss-120b:free` | High quality, may be slow or rate-limited |
-| Fallback | `openai/gpt-oss-20b:free` | Fast, lightweight, free tier |
+### ✅ Core Features
+- **MCQ Practice** — Topic, Exam, and Quiz modes with 340+ past HKDSE questions
+- **Long Question Practice** — Structured answer with Part-by-Part submission
+- **AI Tutor** — Explains wrong answers using OpenRouter API (GPT-oss-120b with fallback)
+- **Analytics Dashboard** — Score tracking, topic accuracy radar, session history
+- **Dark Mode** — Auto-detects system preference, toggleable
+- **Responsive Design** — Mobile-friendly sidebar, touch-optimized controls
 
-### Backend Whitelist
-The backend only allows models listed in `ALLOWED_MODELS`. Any unknown model ID is silently replaced with the default.
+### ✅ Question Formatting (app-formatters.js)
+- Tables (production/cost, demand/supply schedules, comparison tables)
+- Numbered statements with styled cards
+- Organizational charts (business expansion diagrams)
+- Pie charts (GDP contribution)
+- Production stages diagrams
+- Context/question stem separation
 
-## 🔗 Functional Entry URIs
+### ✅ NEW: Economics Diagrams (app-graphs.js)
+SVG-based economics diagrams generated programmatically. Questions with a `graph` property in `questions.js` now display the appropriate diagram.
 
-| Path | Method | Description |
-|------|--------|-------------|
-| `/` | GET | Main SPA (index.html) |
-| `/api/chat` | POST | AI chat endpoint |
+**Supported Diagram Types:**
 
-### `/api/chat` Request Body
-```json
+| Type | Description | Questions Using It |
+|------|-------------|-------------------|
+| `sd_cross` | Standard S&D cross with 4 equilibrium quadrant points (E₁/E₂/E₃/E₄ or W/X/Y/Z) | m154, m158, m162, m165, m167, m170, m171, m173, m175, m178, m184, m190, m192 |
+| `sd_shift` | S&D with one or both curves shifting (D₁→D₂ or S₁→S₂) | m157, m183, m188, m282 |
+| `sd_shift_cross` | Shift + 4 quadrant points | (available for future questions) |
+| `sd_floor` | S&D with price floor | m241 |
+| `sd_ceiling` | S&D with price ceiling | m232 |
+| `sd_tax` | S&D with per-unit tax (supply shifts) | m223, m236 |
+| `sd_quota` | S&D with quota vertical line | m257, m291 |
+| `sd_surplus` | S&D with shaded CS/PS areas | m283, m293 |
+| `sd_surplus_labeled` | S&D with labeled area points | (available for future questions) |
+| `lorenz` | Lorenz curve(s) for income distribution | m317, m318, m324, m326, m327 |
+
+**How to add a diagram to a question:**
+
+In `questions.js`, add a `graph` property to the question object:
+```js
 {
-  "prompt": "string (required)",
-  "systemPrompt": "string (optional)",
-  "maxTokens": 2000,
-  "temperature": 0.7,
-  "model": "openai/gpt-oss-120b:free"
+  id: 'm999',
+  topic: 'micro-9',
+  q: 'The diagram below shows...',
+  opts: ['E₁','E₂','E₃','E₄'],
+  ans: 2,
+  exp: 'Explanation...',
+  graph: {
+    type: 'sd_cross',
+    labels: {
+      eq: 'E',
+      points: ['E₁','E₂','E₃','E₄'],
+      xAxis: 'Q',
+      yAxis: 'Price',
+      pe: '',
+      qe: ''
+    }
+  }
 }
 ```
 
-### `/api/chat` Response
-```json
+## Features Not Yet Implemented
+
+- [ ] More diagram-bearing questions from Ch. 10 (elasticity diagrams)
+- [ ] Interactive diagram manipulation (drag curves)
+- [ ] "Which of the following diagrams" type (multiple small diagrams in options)
+- [ ] Diagram-based answer checking for Long Questions
+- [ ] Export practice session as PDF
+- [ ] Offline mode / PWA support
+
+## Recommended Next Steps
+
+1. **Add more graph data** — Audit all remaining MCQ questions that reference "diagram below" / "the following diagram" and add `graph` configurations
+2. **Elasticity diagrams** — Add support for elastic/inelastic demand curve comparisons
+3. **Multiple diagram options** — For questions like "Which of the following diagrams correctly represents...", render 4 small diagrams as options
+4. **Interactive surplus shading** — Allow students to click areas to identify CS/PS/DWL
+5. **Graph animation** — Animate curve shifts to help visual learning
+
+## Data Models
+
+### Question Object (MCQ_BANK)
+```js
 {
-  "response": "AI response text",
-  "model": "openai/gpt-oss-120b:free",
-  "usage": { "prompt_tokens": 123, "completion_tokens": 456 }
+  id: string,          // Unique ID (e.g., 'm154')
+  topic: string,       // Topic ID (e.g., 'micro-9')
+  q: string,           // Question text
+  opts: string[],      // 4 options (A-D)
+  ans: number,         // Correct answer index (0-3)
+  exp: string,         // Explanation
+  graph?: {            // ★ NEW optional graph config
+    type: string,      // Diagram type
+    labels?: object,   // Labels for axes, curves, points
+    shift?: string,    // 'demand'|'supply'|'both'
+    shiftDir?: string, // 'left'|'right'|{demand:'right',supply:'left'}
+    curves?: number,   // For Lorenz: number of curves
+    bow?: number[],    // For Lorenz: bow amount(s)
+    ...                // Type-specific properties
+  }
 }
 ```
 
-## 🔧 Environment Variables
+### Graph Config Types
+See `js/app-graphs.js` header comment for full documentation of each type's config schema.
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `OPENROUTER_API_KEY` | Yes | API key from [openrouter.ai/keys](https://openrouter.ai/keys) |
-
-## 🚀 Deployment
-
-This is designed for **Vercel** deployment:
-1. Push to GitHub/GitLab
-2. Connect repo to Vercel
-3. Add `OPENROUTER_API_KEY` environment variable
-4. Deploy
-
-## 📝 Recommended Next Steps
-
-1. **Configurable models** — Let users pick primary/fallback models from the Settings modal
-2. **Retry count config** — Allow more than 1 fallback attempt (e.g., chain 3 models)
-3. **Response streaming** — Use SSE/streaming for faster perceived response times
-4. **Offline question bank** — Cache AI-generated questions in localStorage
-5. **Progress persistence** — Save study stats to a backend database
+## Technology Stack
+- **Frontend**: Vanilla HTML/CSS/JS, Font Awesome, Plus Jakarta Sans, Chart.js
+- **AI Backend**: Vercel Serverless (api/chat.js) → OpenRouter API
+- **Graph Rendering**: Pure SVG generated by JavaScript (no external dependencies)

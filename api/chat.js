@@ -7,12 +7,14 @@
  * 
  * Allowed models (whitelist):
  *   - openai/gpt-oss-120b:free    (primary – high quality)
- *   - liquid/lfm-2.5-1.2b-instruct:free  (fallback – fast & free)
+ *   - openai/gpt-oss-20b:free     (fallback – fast & free)
+ *   - liquid/lfm-2.5-1.2b-instruct:free  (legacy fallback)
  */
 
 const ALLOWED_MODELS = [
   'openai/gpt-oss-120b:free',
-  'openai/gpt-oss-20b:free'
+  'openai/gpt-oss-20b:free',
+  'liquid/lfm-2.5-1.2b-instruct:free'
 ];
 
 const DEFAULT_MODEL = 'openai/gpt-oss-120b:free';

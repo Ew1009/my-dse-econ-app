@@ -1,13 +1,17 @@
 /* ==================================================================
    AI Helper Module - Routes AI requests to OpenRouter via backend
    
-   v2.3 — AUTOMATIC MODEL FALLBACK
+   v2.4 — AUTOMATIC MODEL FALLBACK WITH JITTER DELAY
    
    Flow:
-   1. Try PRIMARY model with a 30-second timeout
-   2. If it fails (timeout, 429, 500, 502, 503) → retry with FALLBACK model
-   3. Show a subtle toast: "Switching to high-speed mode…"
-   4. If fallback also fails → throw the error to the caller
+   1. Try PRIMARY model (gpt-oss-120b) with a 30-second timeout
+   2. If it fails (timeout, 429, 500, 502, 503):
+      a. Log the error to console for debugging
+      b. Show "Switching to backup..." message in the UI
+      c. Wait a RANDOM jitter delay (1.5–3 seconds) to avoid
+         rapid successive calls being flagged as bot activity
+      d. Retry with FALLBACK model (gpt-oss-20b)
+   3. If fallback also fails → throw the error to the caller
    
    IMPORTANT: This file must load BEFORE any file that calls 
    window.AIHelper.callAI (e.g., app-ai.js)
@@ -34,6 +38,28 @@ window.AIHelper = (function() {
   var FALLBACK_MODEL  = 'openai/gpt-oss-20b:free';
   var REQUEST_TIMEOUT = 30000;   // 30 seconds
   var RETRYABLE_CODES = [429, 500, 502, 503];
+
+  /* Jitter delay config (milliseconds) */
+  var JITTER_MIN = 1500;  // 1.5 seconds
+  var JITTER_MAX = 3000;  // 3.0 seconds
+
+  /* ────────────────────────────────────────────
+     Internal: generate a random jitter delay
+     Returns a value between JITTER_MIN and JITTER_MAX
+     ──────────────────────────────────────────── */
+  function getJitterDelay() {
+    return Math.floor(Math.random() * (JITTER_MAX - JITTER_MIN + 1)) + JITTER_MIN;
+  }
+
+  /* ────────────────────────────────────────────
+     Internal: sleep for a given number of ms
+     Returns a Promise that resolves after `ms`
+     ──────────────────────────────────────────── */
+  function sleep(ms) {
+    return new Promise(function(resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
 
   /* ────────────────────────────────────────────
      Internal: fetch with timeout
@@ -71,30 +97,36 @@ window.AIHelper = (function() {
   _TimeoutError.prototype.constructor = _TimeoutError;
 
   /* ────────────────────────────────────────────
-     Internal: show a subtle fallback toast
+     Internal: show "Switching to backup…" in the UI
+     
+     Creates a temporary overlay message so the
+     student knows the app is still working.
      Uses the existing global toast() if available,
      otherwise creates a temporary one.
      ──────────────────────────────────────────── */
-  function showFallbackToast(reason) {
-    var msg = '<i class="fas fa-bolt" style="margin-right:4px"></i> Switching to high-speed mode…';
+  function showSwitchingMessage() {
+    var msg = '<i class="fas fa-sync-alt fa-spin" style="margin-right:6px"></i> Switching to backup model…';
+
     // Use global toast if available
     if (typeof window.toast === 'function') {
       window.toast(msg, 'info');
       return;
     }
+
     // Fallback: inject a quick toast ourselves
     var ctr = document.getElementById('toastCtr');
     if (!ctr) return;
     var el = document.createElement('div');
     el.className = 'toast t-info';
-    el.innerHTML = '<i class="fas fa-bolt" style="font-size:18px;color:var(--ac)"></i>' +
-      '<div style="flex:1;font-weight:600;font-size:13px">Switching to high-speed mode…</div>';
+    el.innerHTML =
+      '<i class="fas fa-sync-alt fa-spin" style="font-size:18px;color:var(--ac)"></i>' +
+      '<div style="flex:1;font-weight:600;font-size:13px">Switching to backup model…</div>';
     ctr.appendChild(el);
     setTimeout(function() {
       el.style.opacity = '0';
       el.style.transition = 'opacity .3s';
       setTimeout(function() { el.remove(); }, 300);
-    }, 3500);
+    }, 4000);
   }
 
   /* ────────────────────────────────────────────
@@ -155,13 +187,26 @@ window.AIHelper = (function() {
   /* ────────────────────────────────────────────
      PUBLIC: callAI(prompt, options)
      
-     This is the main entry point.  All existing
+     This is the main entry point. All existing
      code calls  window.AIHelper.callAI(prompt, opts)
      and gets back a Promise<string>.
+     
+     FLOW:
+     ┌─────────────────────────────────┐
+     │  1. Call PRIMARY model           │
+     │     ↓ success → return response  │
+     │     ↓ failure (retryable)        │
+     │  2. console.error(primaryErr)    │
+     │  3. Show "Switching to backup…"  │
+     │  4. await sleep(1.5–3s jitter)   │
+     │  5. Call FALLBACK model          │
+     │     ↓ success → return response  │
+     │     ↓ failure → throw error      │
+     └─────────────────────────────────┘
      ──────────────────────────────────────────── */
   function callAI(prompt, options) {
-  options = options || {};
- 
+    options = options || {};
+
     // ---- Validate prompt ----
     if (typeof prompt !== 'string') {
       console.error('AIHelper.callAI: prompt is not a string, got:', typeof prompt, prompt);
@@ -208,37 +253,55 @@ window.AIHelper = (function() {
       .catch(function(primaryErr) {
         // ---- Decide whether to retry ----
         var httpStatus = primaryErr.httpStatus || 0;
-        console.warn('AIHelper.callAI → primary failed:', {
+
+        // ** ALWAYS log the primary error for debugging **
+        console.error('AIHelper.callAI → PRIMARY MODEL FAILED:', {
+          model: requestedModel,
           message: primaryErr.message,
           isTimeout: !!primaryErr.isTimeout,
-          httpStatus: httpStatus
+          httpStatus: httpStatus,
+          stack: primaryErr.stack || '(no stack)'
         });
 
         if (!isRetryable(primaryErr, httpStatus)) {
           // Non-retryable error → bubble up immediately
-          console.error('AIHelper.callAI → not retryable, giving up');
+          console.error('AIHelper.callAI → error is not retryable, giving up');
           throw friendlyError(primaryErr);
         }
 
-        // ---- Attempt 2: Fallback model ----
-        console.log('AIHelper.callAI → retrying with fallback model:', FALLBACK_MODEL);
-        showFallbackToast(primaryErr.message);
+        // ---- Begin fallback sequence ----
+        // Step 1: Show "Switching to backup…" message in the UI
+        showSwitchingMessage();
 
-        var fallbackBody = Object.assign({}, baseBody, { model: FALLBACK_MODEL });
+        // Step 2: Calculate random jitter delay (1.5–3s)
+        var jitterMs = getJitterDelay();
+        console.log('AIHelper.callAI → waiting ' + jitterMs + 'ms jitter before fallback…');
 
-        // Give the fallback a fresh full timeout
-        return attemptFetch(fallbackBody, REQUEST_TIMEOUT)
-          .then(function(data) {
-            console.log('AIHelper.callAI → fallback success:', {
-              model: data.model,
-              responseLength: data.response.length
+        // Step 3: Wait for the jitter, THEN call the fallback model
+        return sleep(jitterMs).then(function() {
+          console.log('AIHelper.callAI → jitter complete, calling fallback model:', FALLBACK_MODEL);
+
+          var fallbackBody = Object.assign({}, baseBody, { model: FALLBACK_MODEL });
+
+          // Give the fallback a fresh full timeout
+          return attemptFetch(fallbackBody, REQUEST_TIMEOUT)
+            .then(function(data) {
+              console.log('AIHelper.callAI → fallback success:', {
+                model: data.model,
+                responseLength: data.response.length,
+                jitterUsed: jitterMs + 'ms'
+              });
+              return data.response;
+            })
+            .catch(function(fallbackErr) {
+              console.error('AIHelper.callAI → FALLBACK MODEL ALSO FAILED:', {
+                model: FALLBACK_MODEL,
+                message: fallbackErr.message,
+                httpStatus: fallbackErr.httpStatus || 0
+              });
+              throw friendlyError(fallbackErr);
             });
-            return data.response;
-          })
-          .catch(function(fallbackErr) {
-            console.error('AIHelper.callAI → fallback also failed:', fallbackErr.message);
-            throw friendlyError(fallbackErr);
-          });
+        });
       });
   }
 
@@ -286,6 +349,7 @@ window.AIHelper = (function() {
         primaryModel: PRIMARY_MODEL,
         fallbackModel: FALLBACK_MODEL,
         timeout: REQUEST_TIMEOUT,
+        jitterRange: JITTER_MIN + '-' + JITTER_MAX + 'ms',
         backend: '/api/chat'
       };
     },
@@ -295,7 +359,9 @@ window.AIHelper = (function() {
       return {
         primaryModel: PRIMARY_MODEL,
         fallbackModel: FALLBACK_MODEL,
-        timeout: REQUEST_TIMEOUT
+        timeout: REQUEST_TIMEOUT,
+        jitterMin: JITTER_MIN,
+        jitterMax: JITTER_MAX
       };
     }
   };
@@ -303,5 +369,5 @@ window.AIHelper = (function() {
 })();
 
 // Log initialization
-console.log('AI Helper v2.3 initialized — automatic model fallback enabled');
+console.log('AI Helper v2.4 initialized — automatic model fallback with jitter delay enabled');
 console.log('Provider:', window.AIHelper.getProviderInfo());

@@ -88,6 +88,10 @@ function renderMcqSession(c) {
   h += '<div class="card" style="margin-bottom:16px"><div class="card-body">';
   h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap"><span class="badge badge-p">' + (tp ? tp.name : q.topic) + '</span><span class="badge" style="background:var(--bg2);color:var(--tx2)"><i class="fas ' + modeIc + '" style="margin-right:4px"></i>' + modeLbl + '</span></div>';
   h += '<div class="question-text" style="font-size:15px;font-weight:600;line-height:1.6;margin-bottom:16px">' + formatQuestionText(q.q) + '</div>';
+  /* Render graph/diagram if question has one */
+  if (q.graph && typeof generateGraphHTML === 'function') {
+    h += generateGraphHTML(q.graph);
+  }
   h += '<div class="mcq-opts">';
   for (var i = 0; i < q.opts.length; i++) {
     var cls = 'mcq-opt';
@@ -196,6 +200,7 @@ function renderMcqResults(c, ses, correct, score, dur) {
     h += '<div style="padding:14px 0;border-bottom:1px solid var(--bd)">';
     h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-weight:700;font-size:13px;color:' + (isC ? 'var(--ok)' : 'var(--no)') + '"><i class="fas ' + (isC ? 'fa-check-circle' : 'fa-times-circle') + '"></i> Q' + (i + 1) + '</span><span class="badge badge-p" style="font-size:11px">' + (topicById(q2.topic) ? topicById(q2.topic).name : q2.topic) + '</span></div>';
     h += '<div class="question-text" style="font-size:13px;margin-bottom:6px">' + formatQuestionText(q2.q) + '</div>';
+    if (q2.graph && typeof generateGraphHTML === 'function') { h += generateGraphHTML(q2.graph); }
     if (!isC && ses.answers[i] >= 0) h += '<div style="font-size:12px;color:var(--no);margin-bottom:4px">Your answer: ' + letters[ses.answers[i]] + '. ' + esc(q2.opts[ses.answers[i]]) + '</div>';
     h += '<div style="font-size:12px;color:var(--ok)">Correct: ' + letters[q2.ans] + '. ' + esc(q2.opts[q2.ans]) + '</div>';
     h += '<div style="font-size:12px;color:var(--tx3);margin-top:4px">' + esc(q2.exp) + '</div>';

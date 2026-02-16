@@ -36,8 +36,9 @@
      2. ai-helper.js    - Defines window.AIHelper.callAI (backend API bridge)
      3. questions.js     - Defines window.TOPICS, window.MCQ_BANK, window.LQ_BANK
      4. app-formatters.js - Question formatting utils (depends on: esc, marked, DOMPurify)
+     4b. app-graphs.js   - Economics diagram generator (depends on: nothing)
      5. app-mcq.js       - MCQ landing HTML (depends on: TOPICS, MCQ_BANK)
-     6. app-mcq-session.js - MCQ session render + finish (depends on: S, formatQuestionText)
+     6. app-mcq-session.js - MCQ session render + finish (depends on: S, formatQuestionText, generateGraphHTML)
      7. app-practice.js  - Unified practice section (depends on: S, Sections, renderMcqLanding)
      8. app-longq.js     - Long Q landing + start (depends on: TOPICS, LQ_BANK, S)
      9. app-longq-session.js - Long Q session render (depends on: S, GraphTool)
@@ -59,6 +60,9 @@
 
 <!-- 4. Formatters -->
 <script src="js/app-formatters.js"></script>
+
+<!-- 4b. Economics diagram/graph generator -->
+<script src="js/app-graphs.js"></script>
 
 <!-- 5-6. MCQ modules -->
 <script src="js/app-mcq.js"></script>

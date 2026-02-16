@@ -168,7 +168,7 @@ function showAiSettings(){
   /* Fallback info card */
   h+='<div style="background:rgba(16,185,129,.08);border-left:3px solid var(--ok);padding:12px;border-radius:6px;font-size:13px;margin-bottom:16px">';
   h+='<div style="font-weight:600;margin-bottom:6px"><i class="fas fa-bolt"></i> Automatic Model Fallback</div>';
-  h+='<div style="line-height:1.6">If the primary model is slow or rate-limited, the app automatically retries with a fast backup model. You\'ll see a brief <em>"Switching to high-speed mode"</em> notification.</div>';
+  h+='<div style="line-height:1.6">If the primary model is slow or rate-limited, the app waits a random 1.5–3s jitter, then retries with a fast backup model. You\'ll see a brief <em>"Switching to backup model…"</em> notification.</div>';
   h+='<div style="display:flex;gap:12px;margin-top:10px;flex-wrap:wrap">';
   h+='<div style="flex:1;min-width:150px;background:var(--bg1);padding:10px;border-radius:8px;border:1px solid var(--bd)">';
   h+='<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);margin-bottom:4px">Primary Model</div>';
@@ -176,7 +176,7 @@ function showAiSettings(){
   h+='</div>';
   h+='<div style="flex:1;min-width:150px;background:var(--bg1);padding:10px;border-radius:8px;border:1px solid var(--bd)">';
   h+='<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--tx3);margin-bottom:4px">Fallback Model</div>';
-  h+='<div style="font-weight:700;font-size:12px;color:var(--ac)"><i class="fas fa-bolt" style="margin-right:4px"></i>'+(cfg.fallbackModel||'openai/gpt-oss-20b:free')+'</div>';
+  h+='<div style="font-weight:700;font-size:12px;color:var(--ac)"><i class="fas fa-bolt" style="margin-right:4px"></i>'+(cfg.fallbackModel||'liquid/lfm-2.5-1.2b-instruct:free')+'</div>';
   h+='</div>';
   h+='</div>';
   h+='<div style="margin-top:8px;font-size:12px;color:var(--tx3)">Timeout: '+ ((cfg.timeout||30000)/1000) +'s &bull; Retry on: 429, 500, 502, 503, timeout</div>';

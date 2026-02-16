@@ -1,6 +1,20 @@
-/* Question Formatter Styles - from v0.1 */
+/* ==================================================================
+   Question Formatter Styles (restored from v0.1)
+   
+   CSS variable mapping (v0.1 → v2.2):
+     --bg-primary    → --bg0
+     --bg-secondary  → --bg1
+     --bg-tertiary   → --bg2
+     --text-primary  → --tx1
+     --text-secondary→ --tx2
+     --text-muted    → --tx3
+     --border        → --bd
+     --primary       → --pr
+   ================================================================== */
 
-/* Question stem - context or intro text */
+/* ============================================================
+   QUESTION STEM & SUB-QUESTION
+   ============================================================ */
 .question-stem {
   font-size: 15px;
   line-height: 1.7;
@@ -10,7 +24,6 @@
   border-bottom: 1px solid var(--bd);
 }
 
-/* Sub-question text - typically "Which of the following..." */
 .question-sub {
   font-size: 15px;
   font-weight: 600;
@@ -21,7 +34,19 @@
   border-top: 1px solid var(--bd);
 }
 
-/* Statement list container */
+.question-suffix {
+  margin-top: 16px;
+  font-weight: 500;
+}
+
+.question-intro {
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   STATEMENT LIST (numbered statements)
+   ============================================================ */
 .statement-list {
   display: flex;
   flex-direction: column;
@@ -33,7 +58,6 @@
   border: 1px solid var(--bd);
 }
 
-/* Individual statement item */
 .statement-item {
   display: flex;
   align-items: flex-start;
@@ -50,7 +74,6 @@
   background: rgba(37, 99, 235, 0.03);
 }
 
-/* Statement number label */
 .statement-num {
   min-width: 60px;
   font-weight: 700;
@@ -59,7 +82,6 @@
   flex-shrink: 0;
 }
 
-/* Statement text content */
 .statement-text {
   flex: 1;
   font-size: 14px;
@@ -67,7 +89,9 @@
   color: var(--tx1);
 }
 
-/* Question text wrapper - general styling */
+/* ============================================================
+   QUESTION TEXT WRAPPER
+   ============================================================ */
 .question-text {
   line-height: 1.7;
 }
@@ -80,7 +104,424 @@
   margin-bottom: 0;
 }
 
-/* Dark mode adjustments */
+/* ============================================================
+   DATA TABLES (Production/Cost tables with Header (unit) format)
+   ============================================================ */
+.question-table-container {
+  margin: 16px 0;
+  overflow-x: auto;
+}
+
+.question-data-table {
+  border-collapse: collapse;
+  background: var(--bg0);
+  border: 1px solid var(--tx1);
+  font-size: 14px;
+}
+
+.question-data-table th,
+.question-data-table td {
+  padding: 8px 14px;
+  text-align: center;
+  border: 1px solid var(--tx1);
+}
+
+.question-data-table th {
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--bg0);
+}
+
+.question-data-table th .unit {
+  font-weight: 400;
+  font-size: 12px;
+}
+
+.question-data-table .row-header {
+  text-align: left;
+  background: var(--bg0);
+  min-width: 140px;
+}
+
+.question-data-table .data-cell {
+  background: var(--bg0);
+  font-weight: 500;
+}
+
+.question-data-table td {
+  background: var(--bg0);
+}
+
+.question-data-table thead {
+  background: transparent;
+  color: var(--tx1);
+}
+
+.dark .question-data-table th,
+.dark .question-data-table td {
+  border-color: var(--tx2);
+}
+
+/* ============================================================
+   DIAGONAL HEADER (Year/Sector tables)
+   ============================================================ */
+.diagonal-header {
+  position: relative;
+  width: 100px;
+  height: 60px;
+  padding: 0 !important;
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 1px),
+    var(--tx1) calc(50% - 1px),
+    var(--tx1) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  ) !important;
+}
+
+.diagonal-header .diagonal-top {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  font-style: italic;
+}
+
+.diagonal-header .diagonal-bottom {
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  font-style: italic;
+}
+
+.dark .diagonal-header {
+  background: linear-gradient(
+    to top right,
+    transparent calc(50% - 1px),
+    var(--tx2) calc(50% - 1px),
+    var(--tx2) calc(50% + 1px),
+    transparent calc(50% + 1px)
+  ) !important;
+}
+
+/* ============================================================
+   FIRM / FACTORY / COUNTRY COMPARISON TABLES
+   Styled table with gradient header, rounded corners
+   ============================================================ */
+.firm-table-container {
+  margin: 20px 0;
+  overflow-x: auto;
+  border-radius: 12px;
+  border: 1px solid var(--bd);
+  background: var(--bg1);
+}
+
+.firm-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-size: 14px;
+}
+
+.firm-table th,
+.firm-table td {
+  padding: 14px 18px;
+  text-align: center;
+  border-bottom: 1px solid var(--bd);
+}
+
+.firm-table thead th {
+  background: linear-gradient(135deg, var(--pr), #3b82f6);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  letter-spacing: 0.3px;
+}
+
+.firm-table thead th:first-child {
+  background: var(--bg2);
+  color: var(--tx1);
+  border-top-left-radius: 11px;
+}
+
+.firm-table thead th:last-child {
+  border-top-right-radius: 11px;
+}
+
+.firm-table .row-label {
+  text-align: left;
+  font-weight: 600;
+  background: var(--bg2);
+  color: var(--tx1);
+  min-width: 180px;
+  border-right: 1px solid var(--bd);
+}
+
+.firm-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.firm-table tbody tr:last-child td:first-child {
+  border-bottom-left-radius: 11px;
+}
+
+.firm-table tbody tr:last-child td:last-child {
+  border-bottom-right-radius: 11px;
+}
+
+.firm-table tbody td:not(.row-label) {
+  background: var(--bg0);
+  color: var(--tx1);
+  font-weight: 500;
+}
+
+.firm-table tbody tr:nth-child(even) td:not(.row-label) {
+  background: var(--bg1);
+}
+
+.firm-table tbody tr:hover td {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.firm-table tbody tr:hover td.row-label {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.dark .firm-table thead th:first-child {
+  background: var(--bg2);
+}
+
+.dark .firm-table tbody tr:hover td {
+  background: rgba(96, 165, 250, 0.1);
+}
+
+.dark .firm-table tbody tr:hover td.row-label {
+  background: rgba(96, 165, 250, 0.15);
+}
+
+/* ============================================================
+   PIE CHART STYLES (GDP contribution questions)
+   ============================================================ */
+.pie-charts-container {
+  display: flex;
+  justify-content: center;
+  gap: 50px;
+  margin: 24px 0;
+  flex-wrap: wrap;
+}
+
+.pie-chart-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pie-chart {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  position: relative;
+  border: 2px solid var(--tx1);
+}
+
+.dark .pie-chart {
+  border-color: var(--tx2);
+}
+
+.pie-chart-label {
+  margin-top: 14px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.pie-legend {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  font-size: 11px;
+  text-align: left;
+}
+
+.pie-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pie-legend-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  border: 1px solid var(--bd);
+  flex-shrink: 0;
+}
+
+.pie-legend-text {
+  color: var(--tx2);
+}
+
+.pie-legend-text em {
+  font-style: italic;
+  color: var(--tx1);
+  font-weight: 500;
+}
+
+/* ============================================================
+   PRODUCTION STAGES DIAGRAM (SVG-based)
+   ============================================================ */
+.production-diagram {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 24px 0;
+  padding: 20px;
+}
+
+.production-top-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.production-bottom-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 60px;
+}
+
+.production-box {
+  border: 2px solid var(--tx1);
+  padding: 12px 18px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--bg0);
+  min-width: 100px;
+}
+
+.production-box em {
+  font-style: italic;
+}
+
+.dark .production-box {
+  border-color: var(--tx2);
+}
+
+.production-var {
+  font-size: 18px;
+  font-weight: 600;
+  font-style: italic;
+  padding: 8px 12px;
+}
+
+.production-arrow {
+  color: var(--tx1);
+  font-size: 20px;
+}
+
+.dark .production-arrow {
+  color: var(--tx2);
+}
+
+.production-arrow-down {
+  transform: rotate(45deg);
+}
+
+.production-arrow-up {
+  transform: rotate(-45deg);
+}
+
+.production-connector {
+  display: flex;
+  align-items: center;
+}
+
+/* ============================================================
+   ORGANIZATIONAL CHART (business expansion diagrams)
+   ============================================================ */
+.org-chart-container {
+  margin: 20px 0;
+  padding: 20px;
+  background: var(--bg2);
+  border-radius: 12px;
+  border: 1px solid var(--bd);
+}
+
+.org-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.org-parent {
+  display: flex;
+  justify-content: center;
+}
+
+.org-box {
+  padding: 12px 20px;
+  border: 2px solid var(--tx1);
+  background: var(--bg0);
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.parent-box {
+  min-width: 160px;
+}
+
+.org-arrows {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+}
+
+.org-arrow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.arrow-label {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--pr);
+  margin-bottom: 4px;
+}
+
+.arrow-line {
+  font-size: 24px;
+  color: var(--tx1);
+  line-height: 1;
+}
+
+.org-children {
+  display: flex;
+  justify-content: center;
+  gap: 30px;
+}
+
+.org-child {
+  display: flex;
+  justify-content: center;
+}
+
+.child-box {
+  min-width: 120px;
+}
+
+.dark .org-box {
+  border-color: var(--tx2);
+}
+
+/* ============================================================
+   DARK MODE ADJUSTMENTS
+   ============================================================ */
 .dark .statement-list {
   background: rgba(255, 255, 255, 0.03);
 }
@@ -95,7 +536,9 @@
   border-color: var(--pr);
 }
 
-/* Mobile responsive */
+/* ============================================================
+   MOBILE RESPONSIVE
+   ============================================================ */
 @media (max-width: 768px) {
   .question-stem,
   .question-sub {
@@ -119,4 +562,131 @@
   .statement-item {
     padding: 8px;
   }
+
+  .firm-table th,
+  .firm-table td {
+    padding: 10px 12px;
+    font-size: 13px;
+  }
+
+  .firm-table .row-label {
+    min-width: 120px;
+  }
+
+  .pie-charts-container {
+    gap: 30px;
+  }
+
+  .pie-chart {
+    width: 120px;
+    height: 120px;
+  }
+
+  .question-data-table th,
+  .question-data-table td {
+    padding: 6px 10px;
+    font-size: 13px;
+  }
+
+  .org-chart-container {
+    padding: 14px;
+  }
+
+  .org-arrows {
+    gap: 30px;
+  }
+
+  .org-children {
+    gap: 15px;
+  }
+
+  .econ-graph-container {
+    max-width: 100%;
+    padding: 12px;
+  }
+
+  .econ-graph-wrap {
+    max-width: 260px;
+  }
+}
+
+/* ============================================================
+   ECONOMICS GRAPH / DIAGRAM STYLES (SVG-based)
+   Generated by js/app-graphs.js
+   ============================================================ */
+.econ-graph-container {
+  margin: 16px auto 16px;
+  padding: 16px;
+  background: var(--bg1);
+  border: 1px solid var(--bd);
+  border-radius: 10px;
+  max-width: 360px;
+}
+
+.econ-graph-title {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tx2);
+  margin-bottom: 8px;
+  letter-spacing: 0.02em;
+}
+
+.econ-graph-wrap {
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+.econ-graph-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* SVG text styles */
+.econ-graph-label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--tx1);
+}
+
+.econ-graph-label-sm {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--tx2);
+}
+
+.econ-graph-label-xs {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  fill: var(--tx3);
+}
+
+.econ-graph-curve-label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.econ-graph-point-label {
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* Dark mode adjustments for SVG */
+.dark .econ-graph-container {
+  background: var(--bg1);
+  border-color: var(--bd);
+}
+
+.dark .econ-graph-svg line[stroke="var(--tx1)"] {
+  stroke: var(--tx1);
+}
+
+.dark .econ-graph-svg polygon[fill="var(--tx1)"] {
+  fill: var(--tx1);
 }
