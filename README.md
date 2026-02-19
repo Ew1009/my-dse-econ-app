@@ -1,147 +1,161 @@
-# DSE Economics v2.2 - AI Enhanced
+# DSE Econ v2.2 — AI Enhanced
 
 ## Overview
-A comprehensive HKDSE Economics practice web app with MCQ and Long Question modules, AI-powered tutoring, analytics dashboard, and now **SVG-based economics diagrams**.
+An interactive HKDSE Economics study app with MCQ practice, long-question drills, AI-powered explanations, and analytics. Features **Safe-Zone + Dual-Label SVG economics diagrams** (v6.0).
 
-## Project Structure
-
-```
-index.html                    — Main app entry point
-css/
-  ├── style.css               — Core app styles (layout, nav, cards, dark mode)
-  └── question-formats.css    — Question rendering styles + graph/diagram CSS
-js/
-  ├── app.js                  — Global state (S), utilities, nav, dashboard
-  ├── ai-helper.js            — AI backend bridge (OpenRouter via /api/chat)
-  ├── questions.js             — TOPICS, MCQ_BANK, LQ_BANK question data
-  ├── app-formatters.js        — formatQuestionText() + all table/statement/diagram formatters
-  ├── app-graphs.js            — ★ NEW: SVG economics diagram generator (generateGraphHTML)
-  ├── app-mcq.js               — MCQ landing page HTML
-  ├── app-mcq-session.js       — MCQ session rendering + result review + graph integration
-  ├── app-practice.js          — Unified practice section (MCQ + Long Q tabs)
-  ├── app-longq.js             — Long question bank + landing
-  ├── app-longq-session.js     — Long question session rendering
-  ├── app-graph.js             — Canvas drawing tool for Long Q diagrams
-  ├── app-analytics.js         — Analytics/stats dashboard
-  └── app-ai.js                — AI generation, tutor, Long Q feedback
-api/
-  └── chat.js                  — Vercel serverless function for OpenRouter API
-```
-
-## Entry URIs
-
-| Path | Description |
-|------|-------------|
-| `index.html` | Main application entry |
-| `index.html#dashboard` | Dashboard view |
-| `index.html#practice` | Practice section (MCQ + Long Q) |
-| `index.html#analytics` | Analytics & stats |
+---
 
 ## Currently Completed Features
 
-### ✅ Core Features
-- **MCQ Practice** — Topic, Exam, and Quiz modes with 340+ past HKDSE questions
-- **Long Question Practice** — Structured answer with Part-by-Part submission
-- **AI Tutor** — Explains wrong answers using OpenRouter API (GPT-oss-120b with fallback)
-- **Analytics Dashboard** — Score tracking, topic accuracy radar, session history
-- **Dark Mode** — Auto-detects system preference, toggleable
-- **Responsive Design** — Mobile-friendly sidebar, touch-optimized controls
+### Graph Engine v6.0 (Safe-Zone + Dual Labels Upgrade)
+- ✅ **600×480 Canvas**: ViewBox `600×480`. 80px left/bottom margins ensure axis labels (P, Q) are never cropped.
+- ✅ **Safe-Zone Coordinate Mapping**: Normalized coordinates (0–1) map to:
+  - X-axis: `80 → 520` (440px plot width)
+  - Y-axis: `400 → 60` (340px plot height)
+  - 80px margins on left and bottom prevent label clipping in all scenarios.
+- ✅ **Dual-End Curve Labeling**:
+  - Every curve (D, S) gets **TWO labels** — one at each endpoint.
+  - **Demand (D)** start-label at TOP-LEFT (`text-anchor="end"`, -15px offset); end-label at BOTTOM-RIGHT (`text-anchor="start"`, +15px offset).
+  - **Supply (S)** start-label at BOTTOM-LEFT (`text-anchor="end"`, -15px offset); end-label at TOP-RIGHT (`text-anchor="start"`, +15px offset).
+  - Shift-only diagrams (e.g., m157) use `dualLabel: false` for single-end labels.
+  - Full collision detection nudges overlapping labels apart.
+- ✅ **Axis Label Placement (80/80 Rule)**:
+  - P (Y-axis) at `(x: 30, y: 60)` with `text-anchor="start"` — deep inside visible area.
+  - Q (X-axis) at `(x: 520, y: 440)` with `text-anchor="start"` — deep inside visible area.
+  - Origin "0" at `(plotL - 14, plotB + 22)`.
+- ✅ **Anti-Stacking Equilibrium Labels**: All point labels at `y - 20` above the dot with `text-anchor="middle"`. Nudge algorithm prevents overlap.
+- ✅ **Answer Point White Halo**: Red (#ef4444) answer points have extra-large white halo stroke (`r + 4`, stroke-width 3) for visibility even when lines pass through.
+- ✅ **Dark Mode with `currentColor`**: All axes, arrows, and structural elements use `stroke="currentColor"` and `fill="currentColor"`. CSS variable `--graph-axis` drives the color; dark mode flips automatically.
+- ✅ **Explain Mode Colors**: Demand shift = Blue (#3b82f6), Supply shift = Green (#22c55e), Answer point = Red (#ef4444) with r=6 + highlight ring + white halo.
+- ✅ **Bold PDF Lines**: stroke-width 3.5 for curves, 2.5 for axes. All text 18–20px Bold.
+- ✅ **Containerless Rendering**: `generateSvgConfigHTML()` returns raw SVG in a minimal `<div class="econ-graph-wrap">` — no background, border, or max-width constraint.
+- ✅ **Type-Based Diagrams**: sd_cross, sd_shift, sd_floor, sd_ceiling, sd_tax, sd_quota, sd_surplus, lorenz
+- ✅ **CSV Data Parser**: `parseCsvToConfig()` converts normalized CSV coordinates into render configs
+- ✅ **Legacy Pixel Coord Auto-Scaling**: Coordinates > 1.5 are auto-detected as legacy ~200×200 pixel coords and normalized
 
-### ✅ Question Formatting (app-formatters.js)
-- Tables (production/cost, demand/supply schedules, comparison tables)
-- Numbered statements with styled cards
-- Organizational charts (business expansion diagrams)
-- Pie charts (GDP contribution)
-- Production stages diagrams
-- Context/question stem separation
+### MCQ Practice (Paper 1)
+- ✅ Topic-based, Exam, and Quiz modes
+- ✅ AI-powered explanations with caching
+- ✅ Session history tracking
 
-### ✅ NEW: Economics Diagrams (app-graphs.js)
-SVG-based economics diagrams generated programmatically. Questions with a `graph` property in `questions.js` now display the appropriate diagram.
+### Long Questions (Paper 2)
+- ✅ Question bank with difficulty filtering
+- ✅ Multi-part answers with rich text editor
+- ✅ AI feedback with marking scheme
 
-**Supported Diagram Types:**
+### AI Integration
+- ✅ OpenRouter API via backend serverless function
+- ✅ Primary model with automatic fallback
+- ✅ Jitter delay to avoid rate limiting
 
-| Type | Description | Questions Using It |
-|------|-------------|-------------------|
-| `sd_cross` | Standard S&D cross with 4 equilibrium quadrant points (E₁/E₂/E₃/E₄ or W/X/Y/Z) | m154, m158, m162, m165, m167, m170, m171, m173, m175, m178, m184, m190, m192 |
-| `sd_shift` | S&D with one or both curves shifting (D₁→D₂ or S₁→S₂) | m157, m183, m188, m282 |
-| `sd_shift_cross` | Shift + 4 quadrant points | (available for future questions) |
-| `sd_floor` | S&D with price floor | m241 |
-| `sd_ceiling` | S&D with price ceiling | m232 |
-| `sd_tax` | S&D with per-unit tax (supply shifts) | m223, m236 |
-| `sd_quota` | S&D with quota vertical line | m257, m291 |
-| `sd_surplus` | S&D with shaded CS/PS areas | m283, m293 |
-| `sd_surplus_labeled` | S&D with labeled area points | (available for future questions) |
-| `lorenz` | Lorenz curve(s) for income distribution | m317, m318, m324, m326, m327 |
+### Analytics Dashboard
+- ✅ Performance charts (trend, radar, doughnut)
+- ✅ Study streak tracking
+- ✅ Per-topic accuracy breakdown
 
-**How to add a diagram to a question:**
+---
 
-In `questions.js`, add a `graph` property to the question object:
-```js
-{
-  id: 'm999',
-  topic: 'micro-9',
-  q: 'The diagram below shows...',
-  opts: ['E₁','E₂','E₃','E₄'],
-  ans: 2,
-  exp: 'Explanation...',
-  graph: {
-    type: 'sd_cross',
-    labels: {
-      eq: 'E',
-      points: ['E₁','E₂','E₃','E₄'],
-      xAxis: 'Q',
-      yAxis: 'Price',
-      pe: '',
-      qe: ''
-    }
-  }
-}
+## Functional Entry URIs
+
+| Path | Description |
+|------|-------------|
+| `index.html` | Main app — Dashboard, Practice (MCQ + Long Q), Analytics |
+| `test-svg.html` | Visual verification page for all graph types (v6.0 Safe-Zone + Dual Labels) |
+
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `js/app-graphs.js` | v6.0 Safe-Zone + Dual Labels graph engine (SVG generator) |
+| `js/questions.js` | MCQ & Long Q question bank with graph configs |
+| `js/app-formatters.js` | Question rendering with graph integration |
+| `js/app.js` | Main app state & navigation |
+| `js/app-mcq.js` | MCQ practice logic |
+| `js/app-mcq-session.js` | MCQ session renderer |
+| `js/app-longq.js` | Long question landing |
+| `js/app-longq-session.js` | Long question session renderer |
+| `js/app-ai.js` | AI explanation functions |
+| `js/ai-helper.js` | AI API helper with fallback |
+| `js/app-analytics.js` | Analytics dashboard |
+| `js/app-practice.js` | Unified practice section |
+| `css/style.css` | Main styles with theme variables |
+| `css/question-formats.css` | Question formatter + graph container styles |
+| `test-svg.html` | Graph test/verification page |
+| `data/*.json` | Graph coordinate data (normalized 0–1 + raw pixel JSON metadata) |
+
+---
+
+## v6.0 Graph Engine — Technical Details
+
+### Coordinate System
+```
+ViewBox: 0 0 600 480
+Plot Area: (80, 60) → (520, 400)
+
+  x = 80 + normalized_x × 440
+  y = 400 - normalized_y × 340
+
+Safe Zone: 80px left margin, 80px bottom margin
+           Prevents P/Q axis label cropping in all cases.
 ```
 
-## Features Not Yet Implemented
+### Label Positioning Strategy
+```
+Demand lines (D, D₁, D₂) — DUAL LABELS:
+  → Label A at TOP-LEFT end:     text-anchor="end",   offset: dx=-15, dy=-8
+  → Label B at BOTTOM-RIGHT end: text-anchor="start",  offset: dx=+15, dy=+18
 
-- [ ] More diagram-bearing questions from Ch. 10 (elasticity diagrams)
-- [ ] Interactive diagram manipulation (drag curves)
-- [ ] "Which of the following diagrams" type (multiple small diagrams in options)
-- [ ] Diagram-based answer checking for Long Questions
-- [ ] Export practice session as PDF
-- [ ] Offline mode / PWA support
+Supply lines (S, S₁, S₂) — DUAL LABELS:
+  → Label A at TOP-RIGHT end:    text-anchor="start", offset: dx=+15, dy=-8
+  → Label B at BOTTOM-LEFT end:  text-anchor="end",   offset: dx=-15, dy=+18
+
+Points (E, E₁, W, X, Y, Z):
+  → Label ABOVE the dot: dy=-20, text-anchor="middle"
+  → Collision detection nudges overlapping labels apart
+
+Axis Labels (80/80 Rule):
+  → P (Y-axis): x=30, y=60, text-anchor="start"
+  → Q (X-axis): x=520, y=440, text-anchor="start"
+```
+
+### Color Scheme
+```
+Question Mode:  All lines use currentColor (adapts to light/dark)
+Explain Mode:   Demand shift = #3b82f6 (blue)
+                Supply shift = #22c55e (green)
+                Answer point = #ef4444 (red) r=6 + glow ring + white halo
+```
+
+### Answer Point Visibility
+```
+Answer points (Red #ef4444) in explain mode:
+  → Extra-large white halo: r+4, stroke-width=3 (white fill + stroke)
+  → Main dot: r=6, fill=red, stroke=white
+  → Outer glow ring: r+5, stroke=red, opacity=0.5
+  → Ensures visibility even when lines pass through the point
+```
+
+---
+
+## Data Files (data/*.json)
+
+Each graph has both a **question** and **explain** mode configuration:
+- `m167.json` — Imported Japanese Automobiles (D₀,D₁,D₂ + S₀,S₁,S₂)
+- `m165.json` — Swine Flu Vaccine (D₀,D₁,D₂ + S₀,S₁,S₂)
+- `m162.json` — Milk Powder (D,D₁,D₂ + S,S₁,S₂)
+- `m158.json` — Residential Property (D,D₁,D₂ + S,S₁,S₂)
+- `m157.json` — Exhibition Spaces (D₁→D₂ shift with arrow, no supply)
+- `m154.json` — Hotel Accommodation Macau (D₁,D₂ + S₁,S₂,S₃ with E,W,X,Y,Z)
+
+---
 
 ## Recommended Next Steps
 
-1. **Add more graph data** — Audit all remaining MCQ questions that reference "diagram below" / "the following diagram" and add `graph` configurations
-2. **Elasticity diagrams** — Add support for elastic/inelastic demand curve comparisons
-3. **Multiple diagram options** — For questions like "Which of the following diagrams correctly represents...", render 4 small diagrams as options
-4. **Interactive surplus shading** — Allow students to click areas to identify CS/PS/DWL
-5. **Graph animation** — Animate curve shifts to help visual learning
-
-## Data Models
-
-### Question Object (MCQ_BANK)
-```js
-{
-  id: string,          // Unique ID (e.g., 'm154')
-  topic: string,       // Topic ID (e.g., 'micro-9')
-  q: string,           // Question text
-  opts: string[],      // 4 options (A-D)
-  ans: number,         // Correct answer index (0-3)
-  exp: string,         // Explanation
-  graph?: {            // ★ NEW optional graph config
-    type: string,      // Diagram type
-    labels?: object,   // Labels for axes, curves, points
-    shift?: string,    // 'demand'|'supply'|'both'
-    shiftDir?: string, // 'left'|'right'|{demand:'right',supply:'left'}
-    curves?: number,   // For Lorenz: number of curves
-    bow?: number[],    // For Lorenz: bow amount(s)
-    ...                // Type-specific properties
-  }
-}
-```
-
-### Graph Config Types
-See `js/app-graphs.js` header comment for full documentation of each type's config schema.
-
-## Technology Stack
-- **Frontend**: Vanilla HTML/CSS/JS, Font Awesome, Plus Jakarta Sans, Chart.js
-- **AI Backend**: Vercel Serverless (api/chat.js) → OpenRouter API
-- **Graph Rendering**: Pure SVG generated by JavaScript (no external dependencies)
+1. **Graph engine integration testing** — Run `test-svg.html` to verify all 6 graph sets render correctly in both light and dark modes
+2. **Add more question data** — Import additional DSE past paper questions with CSV coordinate data
+3. **Performance optimization** — Consider lazy-loading graphs that are off-screen
+4. **Print styles** — Add `@media print` rules for PDF export of graphs
+5. **Accessibility** — Add ARIA labels and `<title>` elements to SVGs for screen readers
+6. **Multi-line axis labels** — Test long axis labels (e.g., "Quantity of imported\nJapanese automobiles") for proper wrapping

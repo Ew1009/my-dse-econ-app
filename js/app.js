@@ -214,6 +214,31 @@ function startMcqTimer() {
 /* ---- Legacy Poe Shim (for old bundled code in questions.js) ---- */
 function hasPoe() { return false; }
 
+/* ============================================================
+   SESSION EXPLANATIONS CACHE
+   
+   Stores AI explanations per question ID for the current browser
+   session only. Cleared on page unload.
+   
+   API:
+     window.sessionExplanations            — the store object
+     window.getSessionExplanation(qId)     — get cached explanation or null
+     window.setSessionExplanation(qId, txt)— cache an explanation
+   ============================================================ */
+window.sessionExplanations = {};
+
+window.getSessionExplanation = function(qId) {
+  return window.sessionExplanations[qId] || null;
+};
+window.setSessionExplanation = function(qId, text) {
+  window.sessionExplanations[qId] = text;
+};
+
+/* Clear on tab close / navigation away — keep app lightweight */
+window.addEventListener('beforeunload', function() {
+  window.sessionExplanations = {};
+});
+
 /* ---- App Init (deferred to DOMContentLoaded) ---- */
 /* 
  * NOTE: We do NOT auto-init here anymore. 
@@ -223,5 +248,5 @@ function hasPoe() { return false; }
 function initApp() {
   initNav();
   switchView('dashboard');
-  console.log('DSE Econ v2.2 initialized');
+  console.log('DSE Econ v2.2 initialized — sessionExplanations active');
 }

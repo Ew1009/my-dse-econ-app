@@ -4,10 +4,31 @@
   - topic:  Click option → instant reveal (correct/wrong + explanation). Next → next Q.
   - exam:   Click option → select only (no feedback). Next → next Q. Review at end.
   - quiz:   Same as exam but timed.
+
+  AI Explanation Caching (v2.3):
+  - Explanations are cached in window.sessionExplanations[questionId]
+  - Once fetched, the AI button is hidden and the explanation auto-renders
+  - Cache persists for the browser session only (cleared on beforeunload)
+  - Cached explanations also appear automatically in the Results/Review tab
 */
 
-/* ---- Ask AI to Explain (MCQ) ---- */
-/* Uses window.AIHelper.callAI() instead of Poe API */
+/* ============================================================
+   HELPER: Render a cached or freshly-fetched AI explanation box
+   Returns HTML string. fontSize defaults to 13px.
+   ============================================================ */
+function renderAiExplanationBox(text, fontSize) {
+  var fs = fontSize || '13px';
+  return '<div class="ai-explanation-box" style="margin-top:10px;border-top:1px solid var(--bd);padding-top:10px">'
+    + '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:11px;color:var(--tx3);font-weight:600"><i class="fas fa-robot"></i>AI Explanation</div>'
+    + '<div class="md-content" style="font-size:' + fs + ';line-height:1.6;background:var(--bg2);padding:12px;border-radius:8px">'
+    + renderMd(text) + '</div></div>';
+}
+
+/* ============================================================
+   ASK AI TO EXPLAIN (MCQ)
+   - Calls AI, saves response to sessionExplanations
+   - Replaces the Ask AI button with the explanation
+   ============================================================ */
 function askMcqAi(q, chosenIdx, letters, btnEl, replyEl) {
   if (!btnEl) btnEl = document.getElementById('mcqAskAi');
   if (!replyEl) replyEl = document.getElementById('mcqAiReply');
@@ -34,14 +55,25 @@ function askMcqAi(q, chosenIdx, letters, btnEl, replyEl) {
     maxTokens: 500,
     temperature: 0.5
   }).then(function(response) {
-    replyEl.innerHTML = '<div class="md-content" style="font-size:13px;line-height:1.6;background:var(--bg2);padding:12px;border-radius:8px">' + renderMd(response) + '</div>';
-    if (btnEl) { btnEl.disabled = true; btnEl.innerHTML = '<i class="fas fa-check"></i> Explained'; }
+    /* ---- SAVE to session cache ---- */
+    window.setSessionExplanation(q.id, response);
+
+    /* ---- Replace button + reply area with the full explanation box ---- */
+    var container = (btnEl && btnEl.parentNode) ? btnEl.parentNode : replyEl.parentNode;
+    if (container) {
+      container.innerHTML = renderAiExplanationBox(response, '13px');
+    } else {
+      replyEl.innerHTML = renderAiExplanationBox(response, '13px');
+    }
   }).catch(function(err) {
     replyEl.innerHTML = '<div style="font-size:13px;color:var(--no)"><i class="fas fa-exclamation-triangle"></i> ' + esc(String(err.message || err)) + '</div>';
     if (btnEl) btnEl.disabled = false;
   });
 }
 
+/* ============================================================
+   REVEAL TOPIC ANSWER (click handler for topic mode)
+   ============================================================ */
 function revealTopicAnswer(c, ses, chosenIdx) {
   var q = ses.questions[ses.idx]; var letters = ['A', 'B', 'C', 'D'];
   ses.answers[ses.idx] = chosenIdx; ses.revealed[ses.idx] = true;
@@ -51,6 +83,7 @@ function revealTopicAnswer(c, ses, chosenIdx) {
     if (i === q.ans) o.classList.add('c-ok');
     else if (i === chosenIdx && !isCorrect) o.classList.add('c-wrong');
   });
+
   /* inject explanation */
   var optsDiv = c.querySelector('.mcq-opts');
   if (optsDiv) {
@@ -58,18 +91,38 @@ function revealTopicAnswer(c, ses, chosenIdx) {
     var ico = isCorrect ? 'fa-check-circle' : 'fa-times-circle';
     var col = isCorrect ? 'var(--ok)' : 'var(--no)';
     var lbl = isCorrect ? 'Correct!' : 'Incorrect — Answer: ' + letters[q.ans];
-    /* Ask AI button (only for wrong answers) */
-    var askHtml = !isCorrect ? '<div style="margin-top:10px;border-top:1px solid var(--bd);padding-top:10px"><button class="btn btn-sm btn-s" id="mcqAskAi"><i class="fas fa-robot"></i> Ask AI to explain</button><div id="mcqAiReply" style="margin-top:8px"></div></div>' : '';
-    expDiv.innerHTML = '<div style="font-weight:700;color:' + col + ';margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:13px"><i class="fas ' + ico + '"></i>' + lbl + '</div><div style="font-size:13px;line-height:1.6">' + esc(q.exp) + '</div>' + askHtml;
-    optsDiv.parentNode.insertBefore(expDiv, optsDiv.nextSibling);
-    /* Wire Ask AI button */
+
+    /* Build the AI section: check cache first */
+    var aiSection = '';
     if (!isCorrect) {
+      var cached = window.getSessionExplanation(q.id);
+      if (cached) {
+        /* Already explained — show cached, no button */
+        aiSection = renderAiExplanationBox(cached, '13px');
+      } else {
+        /* Show the Ask AI button */
+        aiSection = '<div style="margin-top:10px;border-top:1px solid var(--bd);padding-top:10px">'
+          + '<button class="btn btn-sm btn-s" id="mcqAskAi"><i class="fas fa-robot"></i> Ask AI to explain</button>'
+          + '<div id="mcqAiReply" style="margin-top:8px"></div></div>';
+      }
+    }
+
+    expDiv.innerHTML = '<div style="font-weight:700;color:' + col + ';margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:13px"><i class="fas ' + ico + '"></i>' + lbl + '</div>'
+      + '<div style="font-size:13px;line-height:1.6">' + esc(q.exp) + '</div>'
+      + aiSection;
+    optsDiv.parentNode.insertBefore(expDiv, optsDiv.nextSibling);
+
+    /* Wire Ask AI button (only if not cached) */
+    if (!isCorrect && !window.getSessionExplanation(q.id)) {
       var askBtn = document.getElementById('mcqAskAi');
       if (askBtn) askBtn.onclick = function() { askMcqAi(q, chosenIdx, letters); };
     }
   }
 }
 
+/* ============================================================
+   RENDER MCQ SESSION (main question view)
+   ============================================================ */
 function renderMcqSession(c) {
   var ses = S.mcq.ses; if (!ses) return;
   var q = ses.questions[ses.idx]; var letters = ['A', 'B', 'C', 'D'];
@@ -88,8 +141,17 @@ function renderMcqSession(c) {
   h += '<div class="card" style="margin-bottom:16px"><div class="card-body">';
   h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap"><span class="badge badge-p">' + (tp ? tp.name : q.topic) + '</span><span class="badge" style="background:var(--bg2);color:var(--tx2)"><i class="fas ' + modeIc + '" style="margin-right:4px"></i>' + modeLbl + '</span></div>';
   h += '<div class="question-text" style="font-size:15px;font-weight:600;line-height:1.6;margin-bottom:16px">' + formatQuestionText(q.q) + '</div>';
-  /* Render graph/diagram if question has one */
-  if (q.graph && typeof generateGraphHTML === 'function') {
+  /* Render graph/diagram if question has one — priority: svg_config > svg > graph */
+  /* If explain mode is active and svg_config_explain exists, use it */
+  var useExplainDiagram = isTopic && ses.revealed[ses.idx] && window['he_shown_' + q.id] && q.svg_config_explain;
+  if (useExplainDiagram && typeof generateSvgConfigHTML === 'function') {
+    h += '<div id="mcqDiagramContainer">' + generateSvgConfigHTML(q.svg_config_explain) + '</div>';
+    h += '<div style="text-align:center;margin-top:4px"><span style="font-size:11px;color:var(--tx3)"><i class="fas fa-info-circle" style="margin-right:3px"></i>Diagram: Explain mode — <span style="color:#0000FF">■</span> D shift · <span style="color:#00AA00">■</span> S shift · <span style="color:#FF0000">●</span> Answer</span></div>';
+  } else if (q.svg_config && typeof generateSvgConfigHTML === 'function') {
+    h += '<div id="mcqDiagramContainer">' + generateSvgConfigHTML(q.svg_config) + '</div>';
+  } else if (q.svg) {
+    h += '<div class="econ-graph-container"><div class="econ-graph-wrap">' + q.svg + '</div></div>';
+  } else if (q.graph && typeof generateGraphHTML === 'function') {
     h += generateGraphHTML(q.graph);
   }
   h += '<div class="mcq-opts">';
@@ -103,15 +165,43 @@ function renderMcqSession(c) {
     h += '<div class="' + cls + '" data-oi="' + i + '"><div class="opt-let">' + letters[i] + '</div><div class="opt-tx">' + esc(q.opts[i]) + '</div></div>';
   }
   h += '</div>';
+
   /* show explanation only for topic mode after reveal */
   if (isTopic && ses.revealed[ses.idx]) {
     var wasCorrect = ses.answers[ses.idx] === q.ans;
     var ico2 = wasCorrect ? 'fa-check-circle' : 'fa-times-circle';
     var col2 = wasCorrect ? 'var(--ok)' : 'var(--no)';
     var lbl2 = wasCorrect ? 'Correct!' : 'Incorrect — Answer: ' + letters[q.ans];
-    /* Ask AI button for wrong answers in re-rendered view */
-    var askHtml3 = !wasCorrect ? '<div style="margin-top:10px;border-top:1px solid var(--bd);padding-top:10px"><button class="btn btn-sm btn-s" id="mcqAskAi"><i class="fas fa-robot"></i> Ask AI to explain</button><div id="mcqAiReply" style="margin-top:8px"></div></div>' : '';
-    h += '<div class="ans-sec"><div style="font-weight:700;color:' + col2 + ';margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:13px"><i class="fas ' + ico2 + '"></i>' + lbl2 + '</div><div style="font-size:13px;line-height:1.6">' + esc(q.exp) + '</div>' + askHtml3 + '</div>';
+
+    /* ---- Check session cache for AI explanation ---- */
+    var aiSection2 = '';
+    if (!wasCorrect) {
+      var cached2 = window.getSessionExplanation(q.id);
+      if (cached2) {
+        /* Cached — auto-display, no button */
+        aiSection2 = renderAiExplanationBox(cached2, '13px');
+      } else {
+        /* Not cached — show button */
+        aiSection2 = '<div style="margin-top:10px;border-top:1px solid var(--bd);padding-top:10px">'
+          + '<button class="btn btn-sm btn-s" id="mcqAskAi"><i class="fas fa-robot"></i> Ask AI to explain</button>'
+          + '<div id="mcqAiReply" style="margin-top:8px"></div></div>';
+      }
+    }
+    h += '<div class="ans-sec"><div style="font-weight:700;color:' + col2 + ';margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:13px"><i class="fas ' + ico2 + '"></i>' + lbl2 + '</div>'
+      + '<div style="font-size:13px;line-height:1.6">' + esc(q.exp) + '</div>'
+      + aiSection2;
+    /* Hidden diagram explanation — shown via button click */
+    if (q.hidden_explanation || q.svg_config_explain) {
+      var heKey = 'he_shown_' + q.id;
+      if (window[heKey]) {
+        if (q.hidden_explanation) {
+          h += '<div class="hidden-exp-box" style="margin-top:10px;padding:10px 12px;background:var(--bg2);border-radius:8px;border-left:3px solid var(--pr);font-size:13px;line-height:1.6"><i class="fas fa-chart-line" style="color:var(--pr);margin-right:6px"></i><strong>Diagram Explanation:</strong><br>' + esc(q.hidden_explanation) + '</div>';
+        }
+      } else {
+        h += '<div style="margin-top:8px"><button class="btn btn-sm btn-s" id="mcqExplainDiagram" style="font-size:12px"><i class="fas fa-chart-line" style="margin-right:4px"></i>Explain Diagram</button></div>';
+      }
+    }
+    h += '</div>';
   }
   h += '</div></div>';
   /* action buttons */
@@ -153,14 +243,27 @@ function renderMcqSession(c) {
   var finBtn = document.getElementById('mcqFinish');
   if (finBtn) finBtn.onclick = function() { finishMcq(); };
 
-  /* Wire Ask AI on re-rendered revealed wrong answers */
-  var askAiBtn = document.getElementById('mcqAskAi');
-  if (askAiBtn && isTopic && ses.revealed[ses.idx] && ses.answers[ses.idx] !== q.ans) {
-    askAiBtn.onclick = function() { askMcqAi(q, ses.answers[ses.idx], letters); };
+  /* Wire Ask AI on re-rendered revealed wrong answers (only if NOT already cached) */
+  if (isTopic && ses.revealed[ses.idx] && ses.answers[ses.idx] !== q.ans && !window.getSessionExplanation(q.id)) {
+    var askAiBtn = document.getElementById('mcqAskAi');
+    if (askAiBtn) {
+      askAiBtn.onclick = function() { askMcqAi(q, ses.answers[ses.idx], letters); };
+    }
+  }
+
+  /* Wire "Explain Diagram" button for hidden_explanation */
+  var explDiagBtn = document.getElementById('mcqExplainDiagram');
+  if (explDiagBtn) {
+    explDiagBtn.onclick = function() {
+      window['he_shown_' + q.id] = true;
+      renderMcqSession(c);
+    };
   }
 }
 
-/* ---- MCQ Finish ---- */
+/* ============================================================
+   MCQ FINISH — End session, record stats, show results
+   ============================================================ */
 function finishMcq() {
   if (mcqTimer) clearInterval(mcqTimer);
   var ses = S.mcq.ses; if (!ses) return;
@@ -186,6 +289,11 @@ function finishMcq() {
   S.mcq.ses = null;
 }
 
+/* ============================================================
+   RENDER MCQ RESULTS / REVIEW TAB
+   - Auto-displays cached AI explanations for wrong answers
+   - Shows "Ask AI" button only for uncached wrong answers
+   ============================================================ */
 function renderMcqResults(c, ses, correct, score, dur) {
   var wrong = ses.questions.length - correct; var letters = ['A', 'B', 'C', 'D'];
   var h = '<div class="quiz-ctr page-sec active">';
@@ -195,21 +303,43 @@ function renderMcqResults(c, ses, correct, score, dur) {
   if (wrong > 0) h += '<button class="btn btn-s" id="retryWrong"><i class="fas fa-sync"></i>Retry Wrong (' + wrong + ')</button>';
   h += '</div>';
   h += '<div class="card"><div class="card-hdr"><div class="card-t"><i class="fas fa-clipboard-list"></i>Review</div></div><div class="card-body">';
+
   for (var i = 0; i < ses.questions.length; i++) {
     var q2 = ses.questions[i]; var isC = ses.answers[i] === q2.ans;
     h += '<div style="padding:14px 0;border-bottom:1px solid var(--bd)">';
     h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px"><span style="font-weight:700;font-size:13px;color:' + (isC ? 'var(--ok)' : 'var(--no)') + '"><i class="fas ' + (isC ? 'fa-check-circle' : 'fa-times-circle') + '"></i> Q' + (i + 1) + '</span><span class="badge badge-p" style="font-size:11px">' + (topicById(q2.topic) ? topicById(q2.topic).name : q2.topic) + '</span></div>';
     h += '<div class="question-text" style="font-size:13px;margin-bottom:6px">' + formatQuestionText(q2.q) + '</div>';
-    if (q2.graph && typeof generateGraphHTML === 'function') { h += generateGraphHTML(q2.graph); }
+    /* In review, show explain diagram if available, otherwise question diagram */
+    if (q2.svg_config_explain && typeof generateSvgConfigHTML === 'function') {
+      h += generateSvgConfigHTML(q2.svg_config_explain);
+      h += '<div style="text-align:center;margin-top:2px;margin-bottom:4px"><span style="font-size:10px;color:var(--tx3)"><span style="color:#0000FF">■</span> D shift · <span style="color:#00AA00">■</span> S shift · <span style="color:#FF0000">●</span> Answer</span></div>';
+    } else if (q2.svg_config && typeof generateSvgConfigHTML === 'function') { h += generateSvgConfigHTML(q2.svg_config); }
+    else if (q2.svg) { h += '<div class="econ-graph-container"><div class="econ-graph-wrap">' + q2.svg + '</div></div>'; }
+    else if (q2.graph && typeof generateGraphHTML === 'function') { h += generateGraphHTML(q2.graph); }
     if (!isC && ses.answers[i] >= 0) h += '<div style="font-size:12px;color:var(--no);margin-bottom:4px">Your answer: ' + letters[ses.answers[i]] + '. ' + esc(q2.opts[ses.answers[i]]) + '</div>';
     h += '<div style="font-size:12px;color:var(--ok)">Correct: ' + letters[q2.ans] + '. ' + esc(q2.opts[q2.ans]) + '</div>';
     h += '<div style="font-size:12px;color:var(--tx3);margin-top:4px">' + esc(q2.exp) + '</div>';
-    /* Ask AI button for wrong answers in review */
-    if (!isC) { h += '<div style="margin-top:8px"><button class="btn btn-sm btn-s rev-ask-ai" data-ri="' + i + '"><i class="fas fa-robot"></i> Ask AI to explain</button><div class="rev-ai-reply" data-ri="' + i + '" style="margin-top:6px"></div></div>'; }
+    /* Show hidden diagram explanation in review */
+    if (q2.hidden_explanation) {
+      h += '<div style="margin-top:6px;padding:8px 10px;background:var(--bg2);border-radius:6px;border-left:3px solid var(--pr);font-size:12px;line-height:1.5"><i class="fas fa-chart-line" style="color:var(--pr);margin-right:4px"></i><strong>Diagram:</strong> ' + esc(q2.hidden_explanation) + '</div>';
+    }
+
+    /* ---- AI Explanation in Review: check cache first ---- */
+    if (!isC) {
+      var cachedReview = window.getSessionExplanation(q2.id);
+      if (cachedReview) {
+        /* Auto-display the cached explanation — no button needed */
+        h += renderAiExplanationBox(cachedReview, '12px');
+      } else {
+        /* No cache — show Ask AI button */
+        h += '<div style="margin-top:8px"><button class="btn btn-sm btn-s rev-ask-ai" data-ri="' + i + '"><i class="fas fa-robot"></i> Ask AI to explain</button><div class="rev-ai-reply" data-ri="' + i + '" style="margin-top:6px"></div></div>';
+      }
+    }
     h += '</div>';
   }
   h += '</div></div></div>';
   c.innerHTML = h;
+
   /* New Session — restart with same config */
   var newSesBtn = document.getElementById('newSesBtn');
   if (newSesBtn) newSesBtn.onclick = function() {
@@ -217,6 +347,7 @@ function renderMcqResults(c, ses, correct, score, dur) {
     if (cfg) { startMcqSession(cfg.mode, cfg.topics, cfg.count, cfg.timeLimit); }
     else { switchView('practice'); }
   };
+
   /* Retry Wrong */
   var retryBtn = document.getElementById('retryWrong');
   if (retryBtn) retryBtn.onclick = function() {
@@ -227,7 +358,8 @@ function renderMcqResults(c, ses, correct, score, dur) {
     S.mcq.lastCfg = { mode: 'topic', topics: wrongQs.map(function(q) { return q.topic; }), count: wrongQs.length, timeLimit: 0 };
     startMcqTimer(); c.innerHTML = ''; renderMcqSession(c);
   };
-  /* Wire Ask AI buttons in review */
+
+  /* Wire Ask AI buttons in review — only for questions NOT already cached */
   c.querySelectorAll('.rev-ask-ai').forEach(function(btn) {
     btn.onclick = function() {
       var ri = parseInt(btn.dataset.ri, 10);
@@ -256,8 +388,16 @@ function renderMcqResults(c, ses, correct, score, dur) {
         maxTokens: 500,
         temperature: 0.5
       }).then(function(response) {
-        replyEl.innerHTML = '<div class="md-content" style="font-size:12px;line-height:1.6;background:var(--bg2);padding:10px;border-radius:8px">' + renderMd(response) + '</div>';
-        btn.disabled = true; btn.innerHTML = '<i class="fas fa-check"></i> Explained';
+        /* ---- SAVE to session cache ---- */
+        window.setSessionExplanation(q3.id, response);
+
+        /* Replace the button + reply container with the full explanation box */
+        var parentDiv = btn.parentNode;
+        if (parentDiv) {
+          parentDiv.innerHTML = renderAiExplanationBox(response, '12px');
+        } else {
+          replyEl.innerHTML = renderAiExplanationBox(response, '12px');
+        }
       }).catch(function(err) {
         replyEl.innerHTML = '<div style="font-size:12px;color:var(--no)"><i class="fas fa-exclamation-triangle"></i> ' + esc(String(err.message || err)) + '</div>';
         btn.disabled = false;
