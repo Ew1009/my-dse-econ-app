@@ -146,7 +146,7 @@ function renderMcqSession(c) {
   var useExplainDiagram = isTopic && ses.revealed[ses.idx] && window['he_shown_' + q.id] && q.svg_config_explain;
   if (useExplainDiagram && typeof generateSvgConfigHTML === 'function') {
     h += '<div id="mcqDiagramContainer">' + generateSvgConfigHTML(q.svg_config_explain) + '</div>';
-    h += '<div style="text-align:center;margin-top:4px"><span style="font-size:11px;color:var(--tx3)"><i class="fas fa-info-circle" style="margin-right:3px"></i>Diagram: Explain mode — <span style="color:#0000FF">■</span> D shift · <span style="color:#00AA00">■</span> S shift · <span style="color:#FF0000">●</span> Answer</span></div>';
+    h += '<div style="text-align:center;margin-top:4px;margin-bottom:4px"><span style="font-size:11px;color:var(--tx3)"><i class="fas fa-info-circle" style="margin-right:3px"></i>Diagram: Explain mode — <span style="color:#0000FF">■</span> D shift · <span style="color:#00AA00">■</span> S shift · <span style="color:#FF0000">●</span> Answer</span></div>';
   } else if (q.svg_config && typeof generateSvgConfigHTML === 'function') {
     h += '<div id="mcqDiagramContainer">' + generateSvgConfigHTML(q.svg_config) + '</div>';
   } else if (q.svg) {

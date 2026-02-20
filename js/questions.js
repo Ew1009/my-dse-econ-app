@@ -651,7 +651,7 @@ function wireMcqLanding(c){
 }
 
 function startMcqSession(mode,topics,count,customTimeLimit){
-  var pool=MCQ_BANK.filter(function(q){return topics.indexOf(q.topic)>=0;});
+  var pool=MCQ_BANK.filter(function(q){return topics.includes(q.topic);});
   pool=shuffle(pool).slice(0,Math.min(count,pool.length));
   if(!pool.length){toast('No questions for selected topics','err');return;}
   var tl=0;
@@ -687,33 +687,9 @@ function revealTopicAnswer(c,ses,chosenIdx){
     var ico=isCorrect?'fa-check-circle':'fa-times-circle';
     var col=isCorrect?'var(--ok)':'var(--no)';
     var lbl=isCorrect?'Correct!':'Incorrect — Answer: '+letters[q.ans];
-    var askHtml=!isCorrect?'<div style="margin-top:10px;border-top:1px solid var(--bd);padding-top:10px"><button class="btn btn-sm btn-s" id="mcqAskAi"><i class="fas fa-robot"></i> Ask AI to explain</button><div id="mcqAiReply" style="margin-top:8px"></div></div>':'';
-    expDiv.innerHTML='<div style="font-weight:700;color:'+col+';margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:13px"><i class="fas '+ico+'"></i>'+lbl+'</div><div style="font-size:13px;line-height:1.6">'+esc(q.exp)+'</div>'+askHtml;
+    var askHtml='';
     optsDiv.parentNode.insertBefore(expDiv,optsDiv.nextSibling);
-    if(!isCorrect){var askBtn=document.getElementById('mcqAskAi');if(askBtn)askBtn.onclick=function(){askMcqAi(q,chosenIdx,letters);};}
   }
-}
-function askMcqAi(q,chosenIdx,letters){
-  var btn=document.getElementById('mcqAskAi');
-  var reply=document.getElementById('mcqAiReply');if(!reply)return;
-  if(!hasPoe()){reply.innerHTML='<div style="font-size:13px;color:var(--wn)"><i class="fas fa-info-circle"></i> AI requires Poe.</div>';return;}
-  if(btn)btn.disabled=true;
-  reply.innerHTML='<div style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tx3)"><div class="spinner" style="width:18px;height:18px;margin:0;border-width:2px"></div>Thinking...</div>';
-  var tp=topicById(q.topic);
-  var prompt='You are an HKDSE Economics tutor. A student got this MCQ wrong:\n\nQuestion: '+q.q+'\n';
-  prompt+='Options: '+q.opts.map(function(o,i){return letters[i]+'. '+o;}).join(' | ')+'\n';
-  prompt+='Student chose: '+letters[chosenIdx]+' ('+q.opts[chosenIdx]+')\nCorrect answer: '+letters[q.ans]+' ('+q.opts[q.ans]+')\n';
-  if(tp)prompt+='Topic: '+tp.name+'\n';
-  prompt+='\nExplain in 3-4 sentences why their answer is wrong and why the correct answer is right. Use simple language.';
-  window.Poe.registerHandler('mcq-ask-ai',function(result){
-    var msg=result.responses[0];
-    if(msg.status==='error'){reply.innerHTML='<div style="font-size:13px;color:var(--no)"><i class="fas fa-exclamation-triangle"></i> '+(msg.statusText||'Error')+'</div>';if(btn)btn.disabled=false;}
-    else if(msg.status==='incomplete'){reply.innerHTML='<div class="md-content" style="font-size:13px;line-height:1.6;background:var(--bg2);padding:12px;border-radius:8px">'+renderMd(msg.content)+'</div>';}
-    else if(msg.status==='complete'){reply.innerHTML='<div class="md-content" style="font-size:13px;line-height:1.6;background:var(--bg2);padding:12px;border-radius:8px">'+renderMd(msg.content)+'</div>';if(btn){btn.disabled=true;btn.innerHTML='<i class="fas fa-check"></i> Explained';}}
-  });
-  window.Poe.sendUserMessage('@Claude-Sonnet-4.5 '+prompt,{handler:'mcq-ask-ai',stream:true,openChat:false,parameters:{}}).catch(function(err){
-    reply.innerHTML='<div style="font-size:13px;color:var(--no)">Error: '+esc(String(err))+'</div>';if(btn)btn.disabled=false;
-  });
 }
 
 function renderMcqSession(c){
@@ -751,8 +727,7 @@ function renderMcqSession(c){
     var ico2=wasCorrect?'fa-check-circle':'fa-times-circle';
     var col2=wasCorrect?'var(--ok)':'var(--no)';
     var lbl2=wasCorrect?'Correct!':'Incorrect — Answer: '+letters[q.ans];
-    var askHtml3=!wasCorrect?'<div style="margin-top:10px;border-top:1px solid var(--bd);padding-top:10px"><button class="btn btn-sm btn-s" id="mcqAskAi"><i class="fas fa-robot"></i> Ask AI to explain</button><div id="mcqAiReply" style="margin-top:8px"></div></div>':'';
-    h+='<div class="ans-sec"><div style="font-weight:700;color:'+col2+';margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:13px"><i class="fas '+ico2+'"></i>'+lbl2+'</div><div style="font-size:13px;line-height:1.6">'+esc(q.exp)+'</div>'+askHtml3+'</div>';
+    h+='<div class="ans-sec"><div style="font-weight:700;color:'+col2+';margin-bottom:6px;display:flex;align-items:center;gap:6px;font-size:13px"><i class="fas '+ico2+'"></i>'+lbl2+'</div><div style="font-size:13px;line-height:1.6">'+esc(q.exp)+'</div></div>';
   }
   h+='</div></div>';
   /* action buttons */
@@ -793,12 +768,6 @@ function renderMcqSession(c){
 
   var finBtn=document.getElementById('mcqFinish');
   if(finBtn)finBtn.onclick=function(){finishMcq();};
-
-  /* Wire Ask AI on re-rendered revealed wrong answers */
-  var askAiBtn=document.getElementById('mcqAskAi');
-  if(askAiBtn&&isTopic&&ses.revealed[ses.idx]&&ses.answers[ses.idx]!==q.ans){
-    askAiBtn.onclick=function(){askMcqAi(q,ses.answers[ses.idx],letters);};
-  }
 }
 
 /* ---- MCQ Finish ---- */
@@ -844,7 +813,6 @@ function renderMcqResults(c,ses,correct,score,dur){
     if(!isC&&ses.answers[i]>=0)h+='<div style="font-size:12px;color:var(--no);margin-bottom:4px">Your answer: '+letters[ses.answers[i]]+'. '+esc(q2.opts[ses.answers[i]])+'</div>';
     h+='<div style="font-size:12px;color:var(--ok)">Correct: '+letters[q2.ans]+'. '+esc(q2.opts[q2.ans])+'</div>';
     h+='<div style="font-size:12px;color:var(--tx3);margin-top:4px">'+esc(q2.exp)+'</div>';
-    if(!isC){h+='<div style="margin-top:8px"><button class="btn btn-sm btn-s rev-ask-ai" data-ri="'+i+'"><i class="fas fa-robot"></i> Ask AI to explain</button><div class="rev-ai-reply" data-ri="'+i+'" style="margin-top:6px"></div></div>';}
     h+='</div>';
   }
   h+='</div></div></div>';
@@ -866,34 +834,6 @@ function renderMcqResults(c,ses,correct,score,dur){
     S.mcq.lastCfg={mode:'topic',topics:wrongQs.map(function(q){return q.topic;}),count:wrongQs.length,timeLimit:0};
     startMcqTimer();c.innerHTML='';renderMcqSession(c);
   };
-  /* Wire Ask AI buttons in review */
-  c.querySelectorAll('.rev-ask-ai').forEach(function(btn){
-    btn.onclick=function(){
-      var ri=parseInt(btn.dataset.ri,10);
-      var q3=ses.questions[ri];var chosen=ses.answers[ri];
-      var replyEl=c.querySelector('.rev-ai-reply[data-ri="'+ri+'"]');
-      if(!replyEl)return;
-      if(!hasPoe()){replyEl.innerHTML='<div style="font-size:12px;color:var(--wn)"><i class="fas fa-info-circle"></i> AI requires Poe.</div>';return;}
-      btn.disabled=true;
-      replyEl.innerHTML='<div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--tx3)"><div class="spinner" style="width:16px;height:16px;margin:0;border-width:2px"></div>Thinking...</div>';
-      var tp=topicById(q3.topic);
-      var prompt='You are an HKDSE Economics tutor. A student got this MCQ wrong:\n\nQuestion: '+q3.q+'\n';
-      prompt+='Options: '+q3.opts.map(function(o,k){return letters[k]+'. '+o;}).join(' | ')+'\n';
-      prompt+='Student chose: '+letters[chosen]+' ('+q3.opts[chosen]+')\nCorrect: '+letters[q3.ans]+' ('+q3.opts[q3.ans]+')\n';
-      if(tp)prompt+='Topic: '+tp.name+'\n';
-      prompt+='\nExplain in 3-4 sentences why their answer is wrong and why the correct answer is right. Simple language.';
-      var hName='rev-ask-ai-'+ri;
-      window.Poe.registerHandler(hName,function(result){
-        var msg=result.responses[0];
-        if(msg.status==='error'){replyEl.innerHTML='<div style="font-size:12px;color:var(--no)"><i class="fas fa-exclamation-triangle"></i> '+(msg.statusText||'Error')+'</div>';btn.disabled=false;}
-        else if(msg.status==='incomplete'){replyEl.innerHTML='<div class="md-content" style="font-size:12px;line-height:1.6;background:var(--bg2);padding:10px;border-radius:8px">'+renderMd(msg.content)+'</div>';}
-        else if(msg.status==='complete'){replyEl.innerHTML='<div class="md-content" style="font-size:12px;line-height:1.6;background:var(--bg2);padding:10px;border-radius:8px">'+renderMd(msg.content)+'</div>';btn.disabled=true;btn.innerHTML='<i class="fas fa-check"></i> Explained';}
-      });
-      window.Poe.sendUserMessage('@Claude-Sonnet-4.5 '+prompt,{handler:hName,stream:true,openChat:false,parameters:{}}).catch(function(err){
-        replyEl.innerHTML='<div style="font-size:12px;color:var(--no)">Error: '+esc(String(err))+'</div>';btn.disabled=false;
-      });
-    };
-  });
 }
 
 ;
@@ -935,13 +875,38 @@ window.LQ_BANK=[
   {label:'(a)',text:'Explain three functions of money.',marks:3,hint:'Medium of exchange, store of value, unit of account.'},
   {label:'(b)',text:'Explain the process of credit creation by commercial banks with a reserve ratio of 10%.',marks:5,hint:'Initial deposit → loans → redeposit cycle. Credit multiplier = 1/r = 10.'},
   {label:'(c)',text:'Discuss how the HKMA maintains the stability of the linked exchange rate system.',marks:4,hint:'Convertibility undertaking, buying/selling USD, adjusting aggregate balance.'}
-]},
-{id:'lq8',topic:'micro-2',title:'Costs & Production',marks:12,difficulty:'Medium',parts:[
-  {label:'(a)',text:'Distinguish between fixed costs and variable costs, giving examples for a bakery.',marks:3,hint:'FC: rent, equipment. VC: flour, labour. FC constant, VC changes with output.'},
-  {label:'(b)',text:'Draw and explain the relationship between MC, ATC, and AVC curves.',marks:5,hint:'MC cuts ATC & AVC at minimums. When MC < ATC, ATC falls; when MC > ATC, ATC rises.'},
-  {label:'(c)',text:'Explain the concept of economies of scale and give two examples.',marks:4,hint:'Falling LRAC as output rises. Technical (larger machines), financial (cheaper borrowing).'}
 ]}
 ];
+
+window.LQ_BANK.push(
+  {"id": "lq_ch1_1", "topic": "micro-1", "year": "2007", "q_num": "10", "sub": "c(i)", "q": "A large number of departing passengers were delayed at the airport in Hong Kong during a typhoon. Suppose they were delayed 24 hours on average. Explain whether their opportunity cost of that visit to Hong Kong would have changed as a result of the delay.", "marks": 2, "ans": "", "exp": "From 2007 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_2", "topic": "micro-1", "year": "2007", "q_num": "10", "sub": "c(ii)", "q": "During that 24 hours, passengers were either waiting in the airport or had free hotel accommodation arranged for them. Explain whether your answer in (c)(i) depends on which situation they were in.", "marks": 2, "ans": "", "exp": "From 2007 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_3", "topic": "micro-1", "year": "2008", "q_num": "9", "sub": "b(i)", "q": "The stock market of an economy is overheated. Many people withdraw money from their bank deposits to buy shares. Two measures are suggested to cool down the overheated stock market. Explain, respectively, whether the opportunity cost of choosing to invest in shares instead of depositing money with banks would change when: (1) the deposit interest rate of banks is raised. (2) the government imposes a tax on the capital gains from trading of shares.", "marks": 4, "ans": "", "exp": "From 2008 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_4", "topic": "micro-1", "year": "2009", "q_num": "1", "sub": "a", "q": "Last summer, Mary and John each bought a $20 Olympic memorial banknote. Each of them had to pay $138 and queue up for a whole day for the purchase. Define opportunity cost.", "marks": 2, "ans": "", "exp": "From 2009 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_5", "topic": "micro-1", "year": "2009", "q_num": "1", "sub": "b", "q": "\"Mary's opportunity cost of purchasing the Olympic memorial banknote would be the same as John's.\" Explain whether the statement is definitely correct.", "marks": 2, "ans": "", "exp": "From 2009 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_6", "topic": "micro-1", "year": "2010", "q_num": "11", "sub": "c(i)", "q": "As the interest earnings from depositing money with banks are close to zero, some investors choose between investment in shares and investment in property. Explain with an example when the opportunity cost of choosing to invest in shares would increase.", "marks": 3, "ans": "", "exp": "From 2010 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_7", "topic": "micro-1", "year": "2010", "q_num": "11", "sub": "c(ii)", "q": "Explain whether the opportunity cost of choosing to invest in shares would change when the amount of dividends increases.", "marks": 2, "ans": "", "exp": "From 2010 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_8", "topic": "micro-1", "year": "2011", "q_num": "1", "sub": "a", "q": "Last year, many people queued up to buy tickets for viewing the animated version of the Riverside Scene at the Qingming Festival exhibition in Hong Kong. Suppose these people queued up for one hour and paid $10 to buy a ticket. Define opportunity cost.", "marks": 2, "ans": "", "exp": "From 2011 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_9", "topic": "micro-1", "year": "2011", "q_num": "1", "sub": "b", "q": "Explain whether the opportunity cost of buying a ticket would definitely be the same to all these people.", "marks": 2, "ans": "", "exp": "From 2011 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_10", "topic": "micro-1", "year": "2011", "q_num": "1", "sub": "c", "q": "Some retail shops provide a free maintenance service for HDTV sets. Explain whether the above service is a free good to society.", "marks": 3, "ans": "", "exp": "From 2011 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_11", "topic": "micro-1", "year": "SP", "q_num": "1", "sub": "", "q": "The HKSAR government periodically publishes statistics related to the Hong Kong economy. Some of these statistics can be viewed free of charge on the internet. Explain whether the statistics on the internet are free goods.", "marks": 3, "ans": "", "exp": "From SP HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_12", "topic": "micro-1", "year": "SP", "q_num": "4", "sub": "b", "q": "More customers go to karaoke lounges during the weekends. However, the services are provided at a price higher than on weekdays. Explain whether customers going to karaoke lounges during the weekends incur a higher or lower cost than on weekdays.", "marks": 5, "ans": "", "exp": "From SP HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_13", "topic": "micro-1", "year": "PP", "q_num": "1", "sub": "", "q": "Peter borrowed a book from Mary and he promised to return the book with a bookmark to her a month later at her request. Explain why the bookmark could be regarded as \"interest\" to both Peter and Mary.", "marks": 4, "ans": "", "exp": "From PP HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_14", "topic": "micro-1", "year": "2012", "q_num": "1", "sub": "", "q": "A good which is free-of-charge is a free good. Do you agree? Explain.", "marks": 3, "ans": "", "exp": "From 2012 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_15", "topic": "micro-1", "year": "2013", "q_num": "9", "sub": "b", "q": "The MTR Corporation raised the railway fares by 5.4% in 2012. This increase was based on the Fare Adjustment Mechanism set by the government. To respond to the discontent of the public over the fare increase, the Corporation introduced a concessionary measure \"Ride 10 Get 1 Free\". Under the \"Ride 10 Get 1 Free\" scheme, with 10 fare-payment journeys on the MTR from Monday to Friday in the same week, passengers could get a single journey ticket for free. Is the free journey a free good? Explain.", "marks": 2, "ans": "", "exp": "From 2013 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_16", "topic": "micro-1", "year": "2013", "q_num": "9", "sub": "c", "q": "It was observed that there were queues of passengers redeeming the free tickets at customer service counters in MTR stations. Suppose the waiting time is the same for these passengers, is the cost of redeeming the free tickets necessarily the same to these passengers? Explain.", "marks": 3, "ans": "", "exp": "From 2013 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_17", "topic": "micro-1", "year": "2014", "q_num": "1", "sub": "a", "q": "Serine is a university graduate who is seeking a job. She has several options: First preference: to work in an accounting firm as a trainee; Second preference: to work for the government as an administrative officer; Third preference: to continue to seek a job without accepting any offers. Analyse whether Serine's opportunity cost of choosing to work as an administrative officer will necessarily remain unchanged if the government reduces the starting salary of administrative officers.", "marks": 2, "ans": "", "exp": "From 2014 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_18", "topic": "micro-1", "year": "2014", "q_num": "1", "sub": "b", "q": "Analyse whether Serine's opportunity cost of choosing to work as an administrative officer will necessarily remain unchanged if the government provides unemployment benefits for all graduates seeking jobs.", "marks": 3, "ans": "", "exp": "From 2014 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_19", "topic": "micro-1", "year": "2015", "q_num": "1", "sub": "a(i)", "q": "More and more famous universities offer \"massive open online courses\" (MOOC) to students from various backgrounds for systematic learning. Most of the teaching materials in MOOC can be accessed online by anyone free of charge. Explain whether these materials are free goods.", "marks": 2, "ans": "", "exp": "From 2015 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_20", "topic": "micro-1", "year": "2015", "q_num": "1", "sub": "c", "q": "Some people prefer to take free MOOC while others prefer to take paid courses conducted on the university campus. If the courses are with the same contents and number of teaching hours, will the cost for a person to take a free MOOC be necessarily lower than the cost of another person to take a paid on-campus course? Explain.", "marks": 3, "ans": "", "exp": "From 2015 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_21", "topic": "micro-1", "year": "2016", "q_num": "1", "sub": "", "q": "Apple Inc. launches a new model of smartphone. In order to buy the new model, some people spend hours trying to login to the website of Apple Inc. If the resale value of the new model falls, the opportunity cost of buying the new model through the website of Apple Inc. will decrease. Do you agree? Explain your answer.", "marks": 3, "ans": "", "exp": "From 2016 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_22", "topic": "micro-1", "year": "2017", "q_num": "1", "sub": "a", "q": "Serine is working in the Hong Kong branch of a multinational firm. She is considering the next step in her career. She has several options: First option: to work in a firm located in South Korea; Second option: to switch to a local firm without overtime work; Third option: to stay in the current firm. Explain whether the opportunity cost of switching to the local firm without overtime work will necessarily remain unchanged if the military threat from North Korea to South Korea becomes more intense.", "marks": 2, "ans": "", "exp": "From 2017 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_23", "topic": "micro-1", "year": "2017", "q_num": "1", "sub": "b", "q": "Explain whether the opportunity cost of switching to the local firm without overtime work will necessarily remain unchanged if she wants to enjoy more leisure time.", "marks": 3, "ans": "", "exp": "From 2017 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_24", "topic": "micro-1", "year": "2018", "q_num": "9", "sub": "", "q": "Although air ticket fares and hotel rates are usually higher during holiday periods, many people still travel abroad. Explain, in terms of opportunity cost, why it is not necessarily more expensive for travellers to travel abroad during holiday periods than non-holiday periods.", "marks": 3, "ans": "", "exp": "From 2018 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_25", "topic": "micro-1", "year": "2019", "q_num": "10", "sub": "a", "q": "A country considers acquiring more land by reclamation for building residential flats. Explain whether the opportunity cost of land reclamation will change if the maximum height of the buildings on the reclaimed land is limited to two storeys due to technical reasons.", "marks": 2, "ans": "", "exp": "From 2019 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_26", "topic": "micro-1", "year": "2019", "q_num": "10", "sub": "b", "q": "Explain whether the opportunity cost of land reclamation will change if there is a shortage of the materials for land reclamation.", "marks": 3, "ans": "", "exp": "From 2019 HKDSE Paper 2. Topic: Basic Economic Concepts."},
+  {"id": "lq_ch1_27", "topic": "micro-1", "year": "2019", "q_num": "11", "sub": "", "q": "Li Ka Shing Foundation offered an unconditional cash gift of $5,000 to each 2018 HKDSE candidate living in Yuen Long, Tuen Mun and Islands districts under the project \"Decide Well, Spend Wisely.\" Statement A: The project can improve the public examination results of candidates in those districts. Statement B: The project can improve equity in Hong Kong. Explain whether Statement A is a positive statement.", "marks": 2, "ans": "", "exp": "From 2019 HKDSE Paper 2. Topic: Basic Economic Concepts."}
+);
 
 /* Aliases for backward compatibility */
 var TOPICS = window.TOPICS;
