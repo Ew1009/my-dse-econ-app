@@ -1,57 +1,79 @@
-# DSE Econ v2.2 — AI Enhanced
+# DSE Econ — Graph Engine v3.0 Integration
 
 ## Overview
-An interactive HKDSE Economics study app with MCQ practice, long-question drills, AI-powered explanations, and analytics. Features **Safe-Zone + Dual-Label SVG economics diagrams** (v6.0).
+Complete rewrite of the standalone Graph Engine (v2.1 → v3.0) for integration into the DSE Economics tutoring app's **Answer Tab** (Long Question diagram pane). The engine is now a proper constructor-based class with dynamic scaling, external configuration, whole-curve interaction, full state serialization, and pedagogical silence.
 
 ---
 
 ## Currently Completed Features
 
-### Graph Engine v6.0 (Safe-Zone + Dual Labels Upgrade)
-- ✅ **600×480 Canvas**: ViewBox `600×480`. 80px left/bottom margins ensure axis labels (P, Q) are never cropped.
-- ✅ **Safe-Zone Coordinate Mapping**: Normalized coordinates (0–1) map to:
-  - X-axis: `80 → 520` (440px plot width)
-  - Y-axis: `400 → 60` (340px plot height)
-  - 80px margins on left and bottom prevent label clipping in all scenarios.
-- ✅ **Dual-End Curve Labeling**:
-  - Every curve (D, S) gets **TWO labels** — one at each endpoint.
-  - **Demand (D)** start-label at TOP-LEFT (`text-anchor="end"`, -15px offset); end-label at BOTTOM-RIGHT (`text-anchor="start"`, +15px offset).
-  - **Supply (S)** start-label at BOTTOM-LEFT (`text-anchor="end"`, -15px offset); end-label at TOP-RIGHT (`text-anchor="start"`, +15px offset).
-  - Shift-only diagrams (e.g., m157) use `dualLabel: false` for single-end labels.
-  - Full collision detection nudges overlapping labels apart.
-- ✅ **Axis Label Placement (80/80 Rule)**:
-  - P (Y-axis) at `(x: 30, y: 60)` with `text-anchor="start"` — deep inside visible area.
-  - Q (X-axis) at `(x: 520, y: 440)` with `text-anchor="start"` — deep inside visible area.
-  - Origin "0" at `(plotL - 14, plotB + 22)`.
-- ✅ **Anti-Stacking Equilibrium Labels**: All point labels at `y - 20` above the dot with `text-anchor="middle"`. Nudge algorithm prevents overlap.
-- ✅ **Answer Point White Halo**: Red (#ef4444) answer points have extra-large white halo stroke (`r + 4`, stroke-width 3) for visibility even when lines pass through.
-- ✅ **Dark Mode with `currentColor`**: All axes, arrows, and structural elements use `stroke="currentColor"` and `fill="currentColor"`. CSS variable `--graph-axis` drives the color; dark mode flips automatically.
-- ✅ **Explain Mode Colors**: Demand shift = Blue (#3b82f6), Supply shift = Green (#22c55e), Answer point = Red (#ef4444) with r=6 + highlight ring + white halo.
-- ✅ **Bold PDF Lines**: stroke-width 3.5 for curves, 2.5 for axes. All text 18–20px Bold.
-- ✅ **Containerless Rendering**: `generateSvgConfigHTML()` returns raw SVG in a minimal `<div class="econ-graph-wrap">` — no background, border, or max-width constraint.
-- ✅ **Type-Based Diagrams**: sd_cross, sd_shift, sd_floor, sd_ceiling, sd_tax, sd_quota, sd_surplus, lorenz
-- ✅ **CSV Data Parser**: `parseCsvToConfig()` converts normalized CSV coordinates into render configs
-- ✅ **Legacy Pixel Coord Auto-Scaling**: Coordinates > 1.5 are auto-detected as legacy ~200×200 pixel coords and normalized
+### 1. Dynamic Scaling ✅
+- `GraphEngine` constructor measures parent container dimensions via `getBoundingClientRect()`.
+- **ResizeObserver** + `window.resize` listener auto-re-renders when the container changes size.
+- Econ coordinate system (0–100 units) stays consistent regardless of pixel dimensions.
+- DPR-aware canvas scaling for retina displays.
 
-### MCQ Practice (Paper 1)
-- ✅ Topic-based, Exam, and Quiz modes
-- ✅ AI-powered explanations with caching
-- ✅ Session history tracking
+### 2. Variable Mapping (External Config) ✅
+- `new GraphEngine(container, state, config)` accepts a config object:
+  - `initialCurves: [{type, label, color, p1:{x,y}, p2:{x,y}}]` — preload curves from question data
+  - `theme: 'light' | 'dark' | 'auto'` — syncs with app's dark mode
+  - `readOnly: true/false` — disables all pointer events for solution viewing
+  - `axisLabels: {x, y, origin}` — custom axis labels
+  - `onStateChange: function(state){}` — callback after every mutation (for auto-save)
+- Runtime update via `engine.updateConfig({readOnly: true})`.
 
-### Long Questions (Paper 2)
-- ✅ Question bank with difficulty filtering
-- ✅ Multi-part answers with rich text editor
-- ✅ AI feedback with marking scheme
+### 3. Whole-Curve Interaction ✅
+- Click & drag a curve by its **body** (not just endpoints): slope is preserved, both endpoints translate by the same delta.
+- Endpoint dragging still works independently.
+- Attached reference lines and quota lines follow the curve during translation.
 
-### AI Integration
-- ✅ OpenRouter API via backend serverless function
-- ✅ Primary model with automatic fallback
-- ✅ Jitter delay to avoid rate limiting
+### 4. State Export (toJSON / fromJSON) ✅
+- `engine.toJSON()` returns a deep clone capturing **everything**:
+  - All curves (positions, labels, colors)
+  - All manual polygon shading (points, labels, colors)
+  - All reference lines (positions, axis labels)
+  - All quota lines
+  - All horizontal lines
+  - All free-text labels
+  - Grid visibility, selected curve, current mode
+- `engine.fromJSON(savedState)` restores the complete state.
+- `engine.toPNG()` exports as data URL (backward compat).
 
-### Analytics Dashboard
-- ✅ Performance charts (trend, radar, doughnut)
-- ✅ Study streak tracking
-- ✅ Per-topic accuracy breakdown
+### 5. Pedagogical Silence ✅
+- **Zero** automatic equilibrium calculations.
+- **Zero** automatic "D" / "S" / "D₁" labeling on curves.
+- All new curves have `label: ''` by default.
+- Students must manually label via the **Label** tool (click curve → dialog).
+- Shaded regions have empty labels until manually set.
+
+---
+
+## File Structure
+
+```
+index.html                    Main app entry (updated with graph-engine.js script tag)
+integration-demo.html         Standalone demo showing how to embed the engine
+js/
+  ├── graph-engine.js          ← NEW: Graph Engine v3.0 (constructor-based)
+  ├── app-longq-session.js     ← UPDATED: Answer Tab uses GraphEngine instead of GraphTool
+  ├── app-graph.js             Legacy GraphTool (kept for backward compat)
+  ├── app.js                   Core app state + navigation
+  ├── app-graphs.js            SVG diagram generator (unchanged)
+  ├── app-ai.js                AI functions (unchanged)
+  ├── ai-helper.js             AI helper module (unchanged)
+  ├── questions.js             Question bank data (unchanged)
+  ├── app-formatters.js        Question formatters (unchanged)
+  ├── app-mcq.js               MCQ landing (unchanged)
+  ├── app-mcq-session.js       MCQ session (unchanged)
+  ├── app-practice.js          Practice section (unchanged)
+  ├── app-longq.js             Long Q landing (unchanged)
+  └── app-analytics.js         Analytics (unchanged)
+css/
+  ├── style.css                Main styles
+  └── question-formats.css     Question format styles
+graph-engine-original.js       Original v2.1 engine (reference copy)
+graph-engine-standalone.html   Original standalone demo page
+```
 
 ---
 
@@ -59,103 +81,159 @@ An interactive HKDSE Economics study app with MCQ practice, long-question drills
 
 | Path | Description |
 |------|-------------|
-| `index.html` | Main app — Dashboard, Practice (MCQ + Long Q), Analytics |
-| `test-svg.html` | Visual verification page for all graph types (v6.0 Safe-Zone + Dual Labels) |
+| `index.html` | Main DSE Econ app (Dashboard → Practice → Long Q → Diagram tab) |
+| `integration-demo.html` | Standalone demo of GraphEngine v3.0 with all config toggles |
+| `graph-engine-standalone.html` | Original v2.1 standalone demo (preserved for reference) |
 
 ---
 
-## Key Files
+## Integration Guide
 
-| File | Purpose |
-|------|---------|
-| `js/app-graphs.js` | v6.0 Safe-Zone + Dual Labels graph engine (SVG generator) |
-| `js/questions.js` | MCQ & Long Q question bank with graph configs |
-| `js/app-formatters.js` | Question rendering with graph integration |
-| `js/app.js` | Main app state & navigation |
-| `js/app-mcq.js` | MCQ practice logic |
-| `js/app-mcq-session.js` | MCQ session renderer |
-| `js/app-longq.js` | Long question landing |
-| `js/app-longq-session.js` | Long question session renderer |
-| `js/app-ai.js` | AI explanation functions |
-| `js/ai-helper.js` | AI API helper with fallback |
-| `js/app-analytics.js` | Analytics dashboard |
-| `js/app-practice.js` | Unified practice section |
-| `css/style.css` | Main styles with theme variables |
-| `css/question-formats.css` | Question formatter + graph container styles |
-| `test-svg.html` | Graph test/verification page |
-| `data/*.json` | Graph coordinate data (normalized 0–1 + raw pixel JSON metadata) |
+### Minimal Integration (3 lines)
+
+```html
+<!-- 1. Include the script -->
+<script src="js/graph-engine.js"></script>
+
+<!-- 2. Create a container div -->
+<div id="my-graph" style="width:100%; height:400px;"></div>
+
+<script>
+// 3. Instantiate
+var engine = new GraphEngine(
+  document.getElementById('my-graph'),
+  initGraphState(),
+  {
+    theme: 'auto',
+    readOnly: false,
+    onStateChange: function(state) {
+      // Save state to your database
+      localStorage.setItem('graph', JSON.stringify(state));
+    }
+  }
+);
+</script>
+```
+
+### Pre-loading Curves from Question Data
+
+```javascript
+var engine = new GraphEngine(container, initGraphState(), {
+  initialCurves: [
+    { type: 'generic', label: '', color: '#3b82f6', p1: {x:15, y:85}, p2: {x:85, y:15} },
+    { type: 'generic', label: '', color: '#ef4444', p1: {x:15, y:15}, p2: {x:85, y:85} }
+  ],
+  readOnly: false,
+  theme: 'auto'
+});
+```
+
+### Restoring Saved State
+
+```javascript
+var savedJSON = JSON.parse(localStorage.getItem('graph'));
+if (savedJSON) {
+  engine.fromJSON(savedJSON);
+}
+```
+
+### Switching to Read-Only (Solution View)
+
+```javascript
+engine.updateConfig({ readOnly: true });
+```
+
+### Answer Tab Integration (app-longq-session.js)
+
+The updated `renderLongQSession()` function:
+1. Creates a `<div id="lqGraphContainer">` instead of a `<canvas>`.
+2. Instantiates `new GraphEngine(containerEl, graphState, config)`.
+3. Wires the toolbar buttons to `engine.setMode()`, `engine.undo()`, etc.
+4. Auto-saves state via `onStateChange` callback into `ses.graphStates[partIdx]`.
+5. Restores state from `ses.graphStates[partIdx]` on revisit.
+6. Calls `engine.destroy()` on re-render to prevent listener leaks.
 
 ---
 
-## v6.0 Graph Engine — Technical Details
+## API Reference
 
-### Coordinate System
-```
-ViewBox: 0 0 600 480
-Plot Area: (80, 60) → (520, 400)
-
-  x = 80 + normalized_x × 440
-  y = 400 - normalized_y × 340
-
-Safe Zone: 80px left margin, 80px bottom margin
-           Prevents P/Q axis label cropping in all cases.
+### Constructor
+```javascript
+var engine = new GraphEngine(containerEl, graphState, config);
 ```
 
-### Label Positioning Strategy
-```
-Demand lines (D, D₁, D₂) — DUAL LABELS:
-  → Label A at TOP-LEFT end:     text-anchor="end",   offset: dx=-15, dy=-8
-  → Label B at BOTTOM-RIGHT end: text-anchor="start",  offset: dx=+15, dy=+18
+### Config Object
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `initialCurves` | `Array` | `null` | Pre-load curves from question data |
+| `theme` | `String` | `'auto'` | `'light'`, `'dark'`, or `'auto'` |
+| `readOnly` | `Boolean` | `false` | Disable all interaction |
+| `axisLabels` | `Object` | `{x:'Quantity', y:'Price (HK$)', origin:'0'}` | Custom axis labels |
+| `onStateChange` | `Function` | `null` | Called after every state mutation |
+| `margin` | `Object` | `{top:24, right:24, bottom:44, left:54}` | Plot area margins (px) |
 
-Supply lines (S, S₁, S₂) — DUAL LABELS:
-  → Label A at TOP-RIGHT end:    text-anchor="start", offset: dx=+15, dy=-8
-  → Label B at BOTTOM-LEFT end:  text-anchor="end",   offset: dx=-15, dy=+18
+### Methods
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `render()` | void | Force re-render |
+| `updateConfig(cfg)` | void | Update config at runtime |
+| `addCurve(opts?)` | `string` | Add a curve, returns its ID |
+| `removeCurve(id?)` | void | Remove curve by ID (or selected) |
+| `setMode(mode)` | void | Set interaction mode |
+| `getMode()` | `string` | Get current mode |
+| `undo()` | void | Undo last action |
+| `redo()` | void | Redo last undone action |
+| `clearAll()` | void | Clear all elements |
+| `toJSON()` | `Object` | Export complete state |
+| `fromJSON(json)` | void | Restore complete state |
+| `toPNG()` | `string` | Export canvas as data URL |
+| `destroy()` | void | Clean up listeners & observers |
 
-Points (E, E₁, W, X, Y, Z):
-  → Label ABOVE the dot: dy=-20, text-anchor="middle"
-  → Collision detection nudges overlapping labels apart
-
-Axis Labels (80/80 Rule):
-  → P (Y-axis): x=30, y=60, text-anchor="start"
-  → Q (X-axis): x=520, y=440, text-anchor="start"
-```
-
-### Color Scheme
-```
-Question Mode:  All lines use currentColor (adapts to light/dark)
-Explain Mode:   Demand shift = #3b82f6 (blue)
-                Supply shift = #22c55e (green)
-                Answer point = #ef4444 (red) r=6 + glow ring + white halo
-```
-
-### Answer Point Visibility
-```
-Answer points (Red #ef4444) in explain mode:
-  → Extra-large white halo: r+4, stroke-width=3 (white fill + stroke)
-  → Main dot: r=6, fill=red, stroke=white
-  → Outer glow ring: r+5, stroke=red, opacity=0.5
-  → Ensures visibility even when lines pass through the point
-```
+### Interaction Modes
+| Mode | Description |
+|------|-------------|
+| `curve` | Move mode — drag endpoints or whole curves |
+| `draw-curve` | Click 2 points to create a new curve |
+| `paint` | Click 4 points to define a shaded polygon |
+| `line` | Click to add a horizontal line |
+| `quota` | Click a curve to add a quota (vertical) line |
+| `reference` | Click a curve to add reference (dashed) lines |
+| `label` | Click any element to add/edit labels |
+| `eraser` | Click any element to delete it |
 
 ---
 
-## Data Files (data/*.json)
+## Features Not Yet Implemented
 
-Each graph has both a **question** and **explain** mode configuration:
-- `m167.json` — Imported Japanese Automobiles (D₀,D₁,D₂ + S₀,S₁,S₂)
-- `m165.json` — Swine Flu Vaccine (D₀,D₁,D₂ + S₀,S₁,S₂)
-- `m162.json` — Milk Powder (D,D₁,D₂ + S,S₁,S₂)
-- `m158.json` — Residential Property (D,D₁,D₂ + S,S₁,S₂)
-- `m157.json` — Exhibition Spaces (D₁→D₂ shift with arrow, no supply)
-- `m154.json` — Hotel Accommodation Macau (D₁,D₂ + S₁,S₂,S₃ with E,W,X,Y,Z)
-
----
+- **Curved lines (Bézier)**: Currently only straight-line curves. Bézier control points for demand/supply elasticity would enhance realism.
+- **Multi-select**: Select and move multiple curves simultaneously.
+- **Snap-to-grid**: Optional snap for precise placement.
+- **Arrow tips on axes**: P/Q axis arrows for more standard economics diagrams.
+- **Import from SVG**: Load app-graphs.js SVG output back into the interactive engine.
 
 ## Recommended Next Steps
 
-1. **Graph engine integration testing** — Run `test-svg.html` to verify all 6 graph sets render correctly in both light and dark modes
-2. **Add more question data** — Import additional DSE past paper questions with CSV coordinate data
-3. **Performance optimization** — Consider lazy-loading graphs that are off-screen
-4. **Print styles** — Add `@media print` rules for PDF export of graphs
-5. **Accessibility** — Add ARIA labels and `<title>` elements to SVGs for screen readers
-6. **Multi-line axis labels** — Test long axis labels (e.g., "Quantity of imported\nJapanese automobiles") for proper wrapping
+1. **Persist graphStates to backend** — Currently saved in client-side session object. Wire `ses.graphStates` to your database (RESTful Table API or Vercel KV).
+2. **AI Feedback on Diagrams** — Pass `engine.toJSON()` to the AI prompt so it can analyze student curve placement.
+3. **Bézier support** — Add curved demand/supply for realistic diagrams.
+4. **Keyboard shortcuts** — Ctrl+Z undo, Ctrl+Y redo, Del to erase selected.
+5. **Touch gesture improvements** — Pinch-to-zoom on mobile.
+
+---
+
+## Data Models
+
+### GraphState Object (stored in `ses.graphStates[partIdx]`)
+```javascript
+{
+  curves: [{id, type, label, color, p1:{x,y}, p2:{x,y}}],
+  labels: [{id, text, x, y, color, fontSize}],
+  shading: [{id, points:[{x,y},...], label, color}],
+  referenceLines: [{pointId, curveId, attachment, t, pointX, pointY, labels:{horizontal, vertical}}],
+  quotas: [{curveId, pointId, attachment, t, x, start_y, end_y, label}],
+  lines: [{type, position, label}],
+  showGrid: true,
+  selectedCurve: null,
+  mode: 'curve'
+}
+```

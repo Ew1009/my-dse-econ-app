@@ -1,8 +1,18 @@
 /* ---- Render Long Q Session ---- */
+/* v3.0: Integrated with GraphEngine (replaces old GraphTool canvas) */
+
+var _lqGraphEngine = null; // module-level reference for the current engine instance
+
 function renderLongQSession(c){
   var ses=S.longQ.ses;if(!ses)return;
   var q=ses.question;var pidx=ses.partIdx;var part=q.parts[pidx];var tp=topicById(q.topic);
   var pct=Math.round((pidx+1)/q.parts.length*100);
+
+  // Destroy previous engine instance to avoid leaked listeners
+  if(_lqGraphEngine){
+    _lqGraphEngine.destroy();
+    _lqGraphEngine = null;
+  }
 
   var h='<div class="quiz-ctr page-sec active">';
   /* Progress */
@@ -36,19 +46,25 @@ function renderLongQSession(c){
   h+='<div contenteditable="true" class="form-inp rich-ta" id="lqEditor" style="min-height:320px;max-height:500px;overflow-y:auto;line-height:1.7;font-size:15px;white-space:pre-wrap;margin:0 16px 16px;border-radius:8px">'+ses.answers[pidx]+'</div>';
   h+='</div>';
 
-  /* Diagram pane */
+  /* ──── Diagram pane (GraphEngine v3.0 integration) ──── */
   h+='<div id="lqDiagramPane" style="display:'+(activeAnsTab==='diagram'?'block':'none')+';padding:16px">';
-  h+='<canvas id="lqCanvas" style="width:100%;height:360px;border-radius:8px;border:1px solid var(--bd)"></canvas>';
-  h+='<div class="graph-tools" style="margin-top:10px">';
-  h+='<button class="lqg-btn" data-tool="pen" style="background:rgba(37,99,235,.1);color:var(--pr);border-color:var(--pr)"><i class="fas fa-pen"></i> Pen</button>';
-  h+='<button class="lqg-btn" data-tool="eraser"><i class="fas fa-eraser"></i> Eraser</button>';
-  h+='<button class="lqg-btn" data-tool="text"><i class="fas fa-font"></i> Label</button>';
-  h+='<input type="color" value="#2563eb" id="lqGraphColor" style="width:32px;height:28px;border:none;cursor:pointer;border-radius:4px">';
-  h+='<select id="lqGraphWidth" style="padding:4px 8px;border:1px solid var(--bd);border-radius:6px;font-size:12px;background:var(--bg1);color:var(--tx1)"><option value="2">Thin</option><option value="4">Medium</option><option value="6">Thick</option></select>';
+  /* Container div — GraphEngine will create its own canvas inside */
+  h+='<div id="lqGraphContainer" style="width:100%;height:380px;border-radius:8px;border:1px solid var(--bd);overflow:hidden;background:var(--bg1);"></div>';
+  /* Toolbar */
+  h+='<div class="graph-tools" id="geToolbar" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:6px;align-items:center;">';
+  h+='<button class="lqg-btn active" data-mode="curve" title="Move / Drag"><i class="fas fa-arrows-alt"></i> Move</button>';
+  h+='<button class="lqg-btn" data-mode="draw-curve" title="Draw Curve"><i class="fas fa-bezier-curve"></i> Draw</button>';
+  h+='<button class="lqg-btn" data-mode="paint" title="Shade Region"><i class="fas fa-fill-drip"></i> Shade</button>';
+  h+='<input type="color" value="#3498DB" id="gePaintColor" style="width:32px;height:28px;border:none;cursor:pointer;border-radius:4px">';
+  h+='<button class="lqg-btn" data-mode="line" title="Horizontal Line"><i class="fas fa-grip-lines"></i> Line</button>';
+  h+='<button class="lqg-btn" data-mode="quota" title="Quota"><i class="fas fa-ruler-vertical"></i> Quota</button>';
+  h+='<button class="lqg-btn" data-mode="reference" title="Reference Lines"><i class="fas fa-crosshairs"></i> Ref</button>';
+  h+='<button class="lqg-btn" data-mode="label" title="Add Label"><i class="fas fa-font"></i> Label</button>';
+  h+='<button class="lqg-btn" data-mode="eraser" title="Eraser"><i class="fas fa-eraser"></i> Erase</button>';
   h+='<span style="flex:1"></span>';
-  h+='<button class="lqg-btn" data-tool="undo"><i class="fas fa-undo"></i></button>';
-  h+='<button class="lqg-btn" data-tool="redo"><i class="fas fa-redo"></i></button>';
-  h+='<button class="lqg-btn" data-tool="clear"><i class="fas fa-trash"></i></button>';
+  h+='<button class="lqg-btn" data-tool="undo" title="Undo"><i class="fas fa-undo"></i></button>';
+  h+='<button class="lqg-btn" data-tool="redo" title="Redo"><i class="fas fa-redo"></i></button>';
+  h+='<button class="lqg-btn" data-tool="clear" title="Clear All"><i class="fas fa-trash"></i></button>';
   h+='</div>';
   h+='</div>';
 
@@ -69,8 +85,47 @@ function renderLongQSession(c){
   h+='</div>';
   c.innerHTML=h;
 
-  /* Wire answer/diagram tab switching */
-  var graphInited=activeAnsTab==='diagram';
+  /* ──── Wire answer/diagram tab switching ──── */
+  var graphInited = (activeAnsTab === 'diagram');
+
+  function _initGraphEngine(){
+    if(_lqGraphEngine) return; // already inited
+
+    var containerEl = document.getElementById('lqGraphContainer');
+    if(!containerEl) return;
+
+    // Restore saved state, or create fresh
+    var savedState = null;
+    if(ses.graphStates && ses.graphStates[pidx]){
+      try { savedState = JSON.parse(ses.graphStates[pidx]); } catch(e){}
+    }
+    var graphState = savedState ? initGraphState(savedState) : initGraphState();
+    // Copy full arrays if restoring
+    if(savedState){
+      ['curves','labels','shading','referenceLines','quotas','lines'].forEach(function(k){
+        if(savedState[k]) graphState[k] = savedState[k];
+      });
+    }
+
+    // Check if question has pre-defined curves to load
+    var preloadCurves = null;
+    if(q.graphCurves && !savedState){
+      preloadCurves = q.graphCurves; // array of {type, label, color, p1, p2}
+    }
+
+    _lqGraphEngine = new GraphEngine(containerEl, graphState, {
+      initialCurves: preloadCurves,
+      theme: 'auto',
+      readOnly: false,
+      axisLabels: (q.axisLabels || null),
+      onStateChange: function(state){
+        // Auto-save graph state to session
+        if(!ses.graphStates) ses.graphStates = {};
+        ses.graphStates[pidx] = JSON.stringify(state);
+      }
+    });
+  }
+
   c.querySelectorAll('#lqAnsTabs .tab-btn').forEach(function(btn){
     btn.onclick=function(){
       c.querySelectorAll('#lqAnsTabs .tab-btn').forEach(function(b){b.classList.remove('active');});
@@ -79,23 +134,61 @@ function renderLongQSession(c){
       ses._activeTab=tab;
       document.getElementById('lqWritePane').style.display=tab==='write'?'block':'none';
       document.getElementById('lqDiagramPane').style.display=tab==='diagram'?'block':'none';
-      if(tab==='diagram'&&!graphInited){
+      if(tab==='diagram' && !graphInited){
         graphInited=true;
-        var cv=document.getElementById('lqCanvas');
-        GraphTool.init(cv);
-        if(ses.graphs[pidx]){
-          var im=new Image();
-          im.onload=function(){
-            GraphTool.drawGrid();
-            GraphTool.ctx.drawImage(im,0,0,cv.width/(window.devicePixelRatio||1),cv.height/(window.devicePixelRatio||1));
-          };
-          im.src=ses.graphs[pidx];
-        }
+        _initGraphEngine();
       }
     };
   });
 
-  /* Wire editor */
+  /* Init graph engine immediately if diagram tab is already active */
+  if(activeAnsTab==='diagram'){
+    graphInited=true;
+    // Use setTimeout to ensure DOM is rendered
+    setTimeout(function(){ _initGraphEngine(); }, 0);
+  }
+
+  /* ──── Wire GraphEngine toolbar ──── */
+  document.querySelectorAll('#geToolbar .lqg-btn[data-mode]').forEach(function(btn){
+    btn.onclick=function(){
+      if(!_lqGraphEngine) return;
+      var mode = btn.dataset.mode;
+      _lqGraphEngine.setMode(mode);
+      document.querySelectorAll('#geToolbar .lqg-btn[data-mode]').forEach(function(b){
+        b.classList.remove('active');
+        b.style.background=''; b.style.color=''; b.style.borderColor='';
+      });
+      btn.classList.add('active');
+      btn.style.background='rgba(37,99,235,.1)';
+      btn.style.color='var(--pr)';
+      btn.style.borderColor='var(--pr)';
+    };
+  });
+
+  document.querySelectorAll('#geToolbar .lqg-btn[data-tool]').forEach(function(btn){
+    btn.onclick=function(){
+      if(!_lqGraphEngine) return;
+      var tool = btn.dataset.tool;
+      if(tool === 'undo') _lqGraphEngine.undo();
+      else if(tool === 'redo') _lqGraphEngine.redo();
+      else if(tool === 'clear'){
+        if(confirm('Clear all diagram elements?')) _lqGraphEngine.clearAll();
+      }
+    };
+  });
+
+  var paintColorEl = document.getElementById('gePaintColor');
+  if(paintColorEl){
+    paintColorEl.onchange = function(){
+      if(!_lqGraphEngine) return;
+      _lqGraphEngine.gs.paintColor = this.value;
+      if(_lqGraphEngine.gs.paintState){
+        _lqGraphEngine.gs.paintState.color = this.value;
+      }
+    };
+  }
+
+  /* ──── Wire editor ──── */
   var editor=document.getElementById('lqEditor');
   var wcEl=document.getElementById('lqWordCount');
   function updateWC(){var txt=(editor.innerText||'').trim();var words=txt?txt.split(/\s+/).length:0;wcEl.textContent=words+' words';ses.answers[pidx]=editor.innerHTML;}
@@ -114,63 +207,17 @@ function renderLongQSession(c){
     else{box.style.display='none';this.innerHTML='<i class="fas fa-lightbulb" style="color:var(--wn)"></i>Show Hint';}
   };
 
-  /* Init graph only if diagram tab is already active */
-  var canvas=document.getElementById('lqCanvas');
-  if(activeAnsTab==='diagram'){
-    graphInited=true;
-    GraphTool.init(canvas);
-    if(ses.graphs[pidx]){
-      var img=new Image();
-      img.onload=function(){
-        GraphTool.drawGrid();
-        GraphTool.ctx.drawImage(img,0,0,canvas.width/(window.devicePixelRatio||1),canvas.height/(window.devicePixelRatio||1));
-      };
-      img.src=ses.graphs[pidx];
+  /* ──── Navigation ──── */
+  function saveCurrent(){
+    ses.answers[pidx]=editor.innerHTML;
+    // Save graph state via engine's auto-save (already wired in onStateChange)
+    if(_lqGraphEngine){
+      if(!ses.graphStates) ses.graphStates = {};
+      ses.graphStates[pidx] = JSON.stringify(_lqGraphEngine.toJSON());
+      // Also keep PNG for backward compat with old submission flow
+      ses.graphs[pidx] = _lqGraphEngine.toPNG();
     }
   }
-
-  /* Graph tool buttons */
-  document.querySelectorAll('.lqg-btn').forEach(function(btn){
-    btn.onclick=function(){
-      var tool=btn.dataset.tool;
-      if(tool==='undo'){GraphTool.undo();return;}
-      if(tool==='redo'){GraphTool.redo();return;}
-      if(tool==='clear'){GraphTool.clear();return;}
-      if(tool==='text'){
-        var label=null;
-        /* Simple text label modal */
-        var mh='<h3 style="font-weight:700;margin-bottom:12px">Add Label</h3>';
-        mh+='<input class="form-inp" id="graphLabelInp" placeholder="Enter text (e.g. P1, S1, D)" style="margin-bottom:14px">';
-        mh+='<div style="display:flex;gap:10px;justify-content:flex-end"><button class="btn btn-s" onclick="Modal.hide()">Cancel</button><button class="btn btn-p" id="graphLabelOk">Add</button></div>';
-        Modal.show(mh);
-        document.getElementById('graphLabelInp').focus();
-        document.getElementById('graphLabelOk').onclick=function(){
-          label=document.getElementById('graphLabelInp').value;Modal.hide();
-          if(label){
-            var cFont='bold 14px Plus Jakarta Sans, sans-serif';
-            GraphTool.ctx.font=cFont;
-            GraphTool.ctx.fillStyle=GraphTool.color;
-            /* Place in center - user can use pen to mark where */
-            var cw2=canvas.width/(window.devicePixelRatio||1);
-            var ch2=canvas.height/(window.devicePixelRatio||1);
-            GraphTool.ctx.fillText(label,cw2/2,ch2/2);
-            GraphTool.paths.push({pts:[{x:cw2/2,y:ch2/2}],color:GraphTool.color,width:1,mode:'text',label:label});
-          }
-        };
-        return;
-      }
-      GraphTool.mode=tool;
-      document.querySelectorAll('.lqg-btn').forEach(function(b){b.style.background='';b.style.color='';b.style.borderColor='';});
-      btn.style.background='rgba(37,99,235,.1)';
-      btn.style.color='var(--pr)';
-      btn.style.borderColor='var(--pr)';
-    };
-  });
-  document.getElementById('lqGraphColor').onchange=function(){GraphTool.color=this.value;};
-  document.getElementById('lqGraphWidth').onchange=function(){GraphTool.lineW=parseInt(this.value,10);};
-
-  /* Navigation */
-  function saveCurrent(){ses.answers[pidx]=editor.innerHTML;if(graphInited)ses.graphs[pidx]=GraphTool.toDataURL();}
   var prevBtn=document.getElementById('lqPrev');if(prevBtn)prevBtn.onclick=function(){saveCurrent();ses.partIdx--;renderLongQSession(c);};
   var nextBtn=document.getElementById('lqNext');if(nextBtn)nextBtn.onclick=function(){saveCurrent();ses.partIdx++;renderLongQSession(c);};
   var subBtn=document.getElementById('lqSubmit');if(subBtn)subBtn.onclick=function(){saveCurrent();submitLongQ(c);};
