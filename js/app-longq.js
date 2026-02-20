@@ -51,8 +51,8 @@ function wireLqLanding(c){
       gh+='<div class="card" style="cursor:pointer;transition:all .2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'var(--shl)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'var(--sh)\'" data-lqid="'+q.id+'">';
       gh+='<div class="card-body">';
       gh+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap"><span class="badge badge-p">'+(tp?tp.name:'')+'</span><span class="badge" style="background:'+dcol+'18;color:'+dcol+'">'+q.difficulty+'</span><span class="badge" style="background:var(--ac)18;color:var(--ac)">'+q.marks+' marks</span></div>';
-      gh+='<div style="font-weight:700;font-size:14px;margin-bottom:8px">'+esc(q.title)+'</div>';
-      gh+='<div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+q.parts.length+' parts</div>';
+      gh+='<div style="font-weight:700;font-size:14px;margin-bottom:8px">'+esc(q.title || q.q || 'Question')+'</div>';
+      gh+='<div style="font-size:12px;color:var(--tx3);margin-bottom:10px">'+(q.parts ? q.parts.length + ' parts' : '1 part')+'</div>';
       gh+='<button class="btn btn-p btn-sm" style="width:100%"><i class="fas fa-play"></i>Start Practice</button>';
       gh+='</div></div>';
     });
@@ -86,11 +86,15 @@ function wireLqLanding(c){
 function previewLongQ(qId){
   var q=null;for(var i=0;i<LQ_BANK.length;i++){if(LQ_BANK[i].id===qId){q=LQ_BANK[i];break;}}
   if(!q)return;var tp=topicById(q.topic);
-  var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><h3 style="font-weight:700;flex:1">'+esc(q.title)+'</h3><button class="btn btn-ghost" onclick="Modal.hide()"><i class="fas fa-times"></i></button></div>';
+  var h='<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px"><h3 style="font-weight:700;flex:1">'+esc(q.title || q.q || 'Question')+'</h3><button class="btn btn-ghost" onclick="Modal.hide()"><i class="fas fa-times"></i></button></div>';
   h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap"><span class="badge badge-p">'+(tp?tp.name:'')+'</span><span class="badge badge-w">'+q.difficulty+'</span><span class="badge" style="background:var(--ac)18;color:var(--ac)">'+q.marks+' marks</span></div>';
-  q.parts.forEach(function(p){
-    h+='<div style="padding:12px 0;border-bottom:1px solid var(--bd)"><div style="display:flex;gap:8px;align-items:baseline"><span style="font-weight:700;color:var(--pr)">'+p.label+'</span><span style="font-size:14px;line-height:1.6">'+esc(p.text)+'</span></div><div style="font-size:12px;color:var(--tx3);margin-top:4px">'+p.marks+' marks</div></div>';
-  });
+  if(q.parts && Array.isArray(q.parts)){
+    q.parts.forEach(function(p){
+      h+='<div style="padding:12px 0;border-bottom:1px solid var(--bd)"><div style="display:flex;gap:8px;align-items:baseline"><span style="font-weight:700;color:var(--pr)">'+p.label+'</span><span style="font-size:14px;line-height:1.6">'+esc(p.text)+'</span></div><div style="font-size:12px;color:var(--tx3);margin-top:4px">'+p.marks+' marks</div></div>';
+    });
+  } else {
+    h+='<div style="padding:12px 0;border-bottom:1px solid var(--bd)"><div style="font-size:14px;line-height:1.6">'+esc(q.q)+'</div><div style="font-size:12px;color:var(--tx3);margin-top:4px">'+q.marks+' marks</div></div>';
+  }
   h+='<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:20px"><button class="btn btn-s" onclick="Modal.hide()">Close</button><button class="btn btn-p" onclick="Modal.hide();startLongQ(\''+q.id+'\')"><i class="fas fa-play"></i>Start Practice</button></div>';
   Modal.show(h);
 }
