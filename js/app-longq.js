@@ -101,7 +101,7 @@ function startLongQ(qId){
   if(!q)return;
   S.longQ.ses={
     question:q,partIdx:0,startTime:Date.now(),elapsed:0,
-    answers:q.parts.map(function(){return '';}),
+    answers:q && q.parts ? q.parts.map(function(){return '';}) : [],
     graphs:q.parts.map(function(){return null;}),
     feedback:null,submitted:false
   };
